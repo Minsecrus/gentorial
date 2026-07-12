@@ -66,9 +66,9 @@ export function HeroJourney({
           <motion.div
             key="actions"
             className="flex min-h-40 flex-col items-center justify-center gap-3 sm:flex-row"
-            initial={{ opacity: 0, y: 22, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
             transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
           >
             <button
@@ -102,11 +102,11 @@ export function HeroJourney({
         {view === 'preferences' ? (
           <motion.form
             key="preferences"
-            className="w-full max-w-4xl border border-black/12 bg-white/92 p-4 text-left shadow-[0_24px_80px_rgb(0_0_0_/_0.06)] backdrop-blur-xl sm:p-6"
+            className="w-full max-w-4xl border border-black/12 bg-white p-4 text-left shadow-[0_24px_80px_rgb(0_0_0_/_0.06)] sm:p-6"
             onSubmit={handleSubmit}
-            initial={{ opacity: 0, y: 26, scale: 0.985, filter: 'blur(10px)' }}
-            animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-            exit={{ opacity: 0, y: -16, scale: 0.99, filter: 'blur(8px)' }}
+            initial={{ opacity: 0, y: 26, scale: 0.985 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.99 }}
             transition={{ duration, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="mb-5 flex items-center justify-between">

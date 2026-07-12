@@ -9,6 +9,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent
 } from 'react'
 
@@ -42,6 +43,7 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
   const [pulseToken, setPulseToken] = useState(0)
   const active = (hovered || focused) && !shattering
   const activeRef = useRef(active)
+  const shatteringRef = useRef(false)
   const completionRef = useRef(onShatterComplete)
   const speedRef = useRef(16)
 
@@ -70,7 +72,7 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
   }, [reducedMotion, shattering])
 
   useAnimationFrame((_, frameDelta) => {
-    if (reducedMotion) return
+    if (reducedMotion || shatteringRef.current) return
 
     const delta = Math.min(frameDelta / 1000, 0.05)
     const targetSpeed = activeRef.current ? 72 : 16
@@ -87,7 +89,7 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
   }
 
   function handlePointerMove(event: ReactPointerEvent<HTMLButtonElement>): void {
-    if (reducedMotion || event.pointerType === 'touch') return
+    if (reducedMotion || shattering || event.pointerType === 'touch') return
 
     const rect = event.currentTarget.getBoundingClientRect()
     const normalizedX = (event.clientX - rect.left) / rect.width - 0.5
@@ -102,6 +104,7 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
     setPulseToken((token) => token + 1)
     setHovered(false)
     resetPointer()
+    shatteringRef.current = true
     setShattering(true)
     onActivate()
   }
@@ -112,13 +115,17 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
   }
 
   return (
-    <div className="orb-float-shell relative">
+    <div
+      className="orb-float-shell relative"
+      data-shattering={shattering ? 'true' : 'false'}
+    >
       <motion.button
         className="orb-button relative grid size-[min(58vw,13.5rem)] place-items-center rounded-full sm:size-[15.5rem] lg:size-[18rem]"
         type="button"
         aria-label="展开生成式界面"
         aria-controls="hero-flow"
         data-active={active ? 'true' : 'false'}
+        data-shattering={shattering ? 'true' : 'false'}
         disabled={shattering}
         animate={{ scale: shattering ? 0.985 : active ? 1.035 : 1 }}
         whileTap={{ scale: reducedMotion ? 1 : 0.97 }}
@@ -191,55 +198,24 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
             <span className="orb-sheen absolute rounded-full" />
           </motion.span>
 
-          <span className="orb-shatter-layer absolute" aria-hidden="true">
-            {orbShards.map((shard, index) => (
-              <motion.span
-                key={shard.clipPath}
-                className="orb-shard absolute inset-0 rounded-full"
-                style={{ clipPath: shard.clipPath }}
-                initial={false}
-                animate={shattering
-                  ? {
-                      opacity: [0, 1, 1, 0],
-                      x: [0, 0, shard.x * 0.16, shard.x],
-                      y: [0, 0, shard.y * 0.16, shard.y],
-                      rotate: [0, 0, shard.rotate * 0.12, shard.rotate],
-                      scale: [1, 1, 0.97, 0.82]
-                    }
-                  : { opacity: 0, x: 0, y: 0, rotate: 0, scale: 1 }}
-                transition={shattering
-                  ? {
-                      duration: reducedMotion ? 0 : 0.86,
-                      delay: reducedMotion ? 0 : shard.delay,
-                      times: [0, 0.04, 0.22, 1],
-                      ease: [0.2, 0.72, 0.22, 1]
-                    }
-                  : { duration: 0 }}
-              >
+          {shattering ? (
+            <span className="orb-shatter-layer absolute" aria-hidden="true">
+              {orbShards.map((shard) => (
                 <span
-                  className="orb-shard-glint absolute"
-                  style={{ opacity: 0.24 + (index % 3) * 0.08 }}
+                  key={shard.clipPath}
+                  className="orb-shard absolute inset-0 rounded-full"
+                  style={{
+                    clipPath: shard.clipPath,
+                    animationDelay: `${shard.delay}s`,
+                    '--shard-x': `${shard.x}px`,
+                    '--shard-y': `${shard.y}px`,
+                    '--shard-rotate': `${shard.rotate}deg`
+                  } as CSSProperties}
                 />
-              </motion.span>
-            ))}
-            <motion.span
-              className="orb-shatter-flash absolute rounded-full"
-              initial={false}
-              animate={shattering
-                ? {
-                    opacity: [0, 0.9, 0.42, 0],
-                    scale: [0.18, 0.18, 0.82, 1.65]
-                  }
-                : { opacity: 0, scale: 0.18 }}
-              transition={shattering
-                ? {
-                    duration: reducedMotion ? 0 : 0.52,
-                    times: [0, 0.05, 0.46, 1],
-                    ease: [0.16, 1, 0.3, 1]
-                  }
-                : { duration: 0 }}
-            />
-          </span>
+              ))}
+              <span className="orb-shatter-flash absolute rounded-full" />
+            </span>
+          ) : null}
 
           {pulseToken > 0 ? (
             <span
@@ -273,7 +249,7 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
               seed="19"
               result="noise"
             >
-              {!reducedMotion ? (
+              {!reducedMotion && !shattering ? (
                 <animate
                   attributeName="baseFrequency"
                   dur="9s"

@@ -45,8 +45,8 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <span
       className={compact
-        ? 'text-[1.375rem] font-bold tracking-[-0.055em]'
-        : 'font-bold tracking-[-0.075em]'}
+        ? 'text-[1.375rem] font-bold tracking-[-0.025em]'
+        : 'font-bold tracking-[-0.025em]'}
       aria-label="GenTorial"
     >
       <span className="text-gentorial-blue">Gen</span>
@@ -283,7 +283,7 @@ export default function App() {
               </h1>
               <motion.div
                 layout
-                className="flex items-baseline font-sans font-bold tracking-[-0.075em]"
+                className="flex items-baseline font-sans font-bold tracking-[-0.025em]"
                 transition={{ type: 'spring', stiffness: 105, damping: 20, mass: 0.9 }}
                 aria-hidden="true"
               >
@@ -291,7 +291,7 @@ export default function App() {
                   layout
                   className={`${titleSeparated
                     ? 'text-[clamp(1.85rem,6.3vw,5.4rem)] leading-[0.84]'
-                    : 'text-[clamp(3.4rem,10vw,8.5rem)] leading-[0.82]'} relative hidden whitespace-nowrap tracking-[-0.075em] transition-[font-size] duration-700 ease-out sm:inline-grid`}
+                    : 'text-[clamp(3.4rem,10vw,8.5rem)] leading-[0.82]'} relative hidden whitespace-nowrap tracking-[-0.05em] sm:inline-grid`}
                   transition={{ layout: { type: 'spring', stiffness: 105, damping: 20, mass: 0.9 } }}
                 >
                   <span
@@ -330,8 +330,8 @@ export default function App() {
                 <motion.span
                   layout
                   className={titleSeparated
-                    ? 'grid w-[min(90vw,7em)] grid-rows-3 text-[clamp(3.25rem,16vw,4.7rem)] leading-[0.82] tracking-[-0.075em] sm:hidden'
-                    : 'inline-flex items-baseline whitespace-nowrap text-[clamp(3.4rem,10vw,8.5rem)] leading-[0.82] tracking-[-0.075em] sm:hidden'}
+                    ? 'grid w-[min(90vw,7em)] grid-rows-3 text-[clamp(3.25rem,16vw,4.7rem)] leading-[0.82] tracking-[-0.05em] sm:hidden'
+                    : 'inline-flex items-baseline whitespace-nowrap text-[clamp(3.4rem,10vw,8.5rem)] leading-[0.82] tracking-[-0.05em] sm:hidden'}
                   transition={{ layout: { type: 'spring', stiffness: 105, damping: 20, mass: 0.9 } }}
                 >
                   <motion.span
@@ -383,7 +383,15 @@ export default function App() {
                     exit={{ opacity: 0, y: 8 }}
                     transition={{ duration: reduceMotion ? 0 : 0.7, ease: [0.16, 1, 0.3, 1] }}
                   >
-                    An open framework for author-defined, learner-shaped tutorials.
+                    An open framework for{' '}
+                    <span className="concept-accent concept-accent-blue">
+                      author-defined
+                    </span>
+                    ,{' '}
+                    <span className="concept-accent concept-accent-magenta">
+                      learner-shaped
+                    </span>{' '}
+                    tutorials.
                   </motion.p>
                 ) : null}
               </AnimatePresence>

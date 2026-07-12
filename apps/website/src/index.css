@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-gentorial-blue: #4b4dff;
-  --color-gentorial-magenta: #ff2d8d;
+  --color-gentorial-blue: #3437e6;
+  --color-gentorial-magenta: #d9166f;
   --font-sans: "Geist Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
   --font-mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
 }
@@ -52,9 +52,63 @@ button:focus-visible {
   background-size: 100% 100%, 32px 32px, 32px 32px;
 }
 
+.concept-accent {
+  position: relative;
+  display: inline-block;
+  margin-inline: 0.28em;
+  white-space: nowrap;
+}
+
+.concept-accent::after {
+  position: absolute;
+  content: "";
+  pointer-events: none;
+  opacity: 0;
+}
+
+.concept-accent::after {
+  right: -0.24em;
+  bottom: 0.035em;
+  left: -0.22em;
+  height: 0.52em;
+  border-right: 1.5px solid var(--concept-accent-color);
+  border-bottom: 1.5px solid var(--concept-accent-color);
+  border-bottom-right-radius: 0.42em 0.3em;
+  transform: scaleX(0) rotate(var(--concept-start-angle, -0.8deg));
+  transform-origin: left bottom;
+  animation: concept-accent-draw 680ms cubic-bezier(0.16, 1, 0.3, 1) var(--concept-draw-delay, 0ms) forwards;
+}
+
+.concept-accent-blue {
+  --concept-accent-color: color-mix(in srgb, var(--color-gentorial-blue) 78%, transparent);
+  --concept-draw-delay: 0ms;
+  --concept-start-angle: 0.8deg;
+  --concept-end-angle: 0.35deg;
+}
+
+.concept-accent-blue::after {
+  border-right: 0;
+  border-left: 1.5px solid var(--concept-accent-color);
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0.42em 0.3em;
+}
+
+.concept-accent-magenta {
+  --concept-accent-color: color-mix(in srgb, var(--color-gentorial-magenta) 78%, transparent);
+  --concept-draw-delay: 120ms;
+  --concept-start-angle: -0.8deg;
+  --concept-end-angle: -0.35deg;
+}
+
 .orb-float-shell {
   animation: orb-float 6.2s ease-in-out infinite;
   will-change: transform;
+}
+
+.orb-float-shell[data-shattering="true"],
+.orb-button[data-shattering="true"] .orb-aura-base,
+.orb-button[data-shattering="true"] .orb-sheen {
+  animation-play-state: paused;
 }
 
 .orb-button {
@@ -195,22 +249,35 @@ button:focus-visible {
   pointer-events: none;
 }
 
+.orb-shatter-layer::before {
+  position: absolute;
+  z-index: 0;
+  inset: -18%;
+  border-radius: 50%;
+  content: "";
+  background: conic-gradient(
+    from 150deg,
+    color-mix(in srgb, var(--color-gentorial-blue) 58%, transparent),
+    rgb(69 239 195 / 0.44),
+    color-mix(in srgb, var(--color-gentorial-magenta) 54%, transparent),
+    rgb(255 213 88 / 0.42),
+    color-mix(in srgb, var(--color-gentorial-blue) 58%, transparent)
+  );
+  filter: blur(28px);
+  animation: orb-shatter-glow 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 .orb-shard {
+  z-index: 1;
   overflow: hidden;
   background: var(--orb-surface-paint);
-  box-shadow: var(--orb-surface-shadow);
+  opacity: 0;
+  animation: orb-shard-break 860ms cubic-bezier(0.2, 0.72, 0.22, 1) both;
   will-change: opacity, transform;
 }
 
-.orb-shard-glint {
-  inset: -18%;
-  background: linear-gradient(128deg, rgb(255 255 255 / 0.72), transparent 38% 62%, rgb(255 255 255 / 0.2));
-  filter: blur(3px);
-  mix-blend-mode: screen;
-  transform: rotate(18deg);
-}
-
 .orb-shatter-flash {
+  z-index: 2;
   inset: 31%;
   background: rgb(255 255 255 / 0.94);
   box-shadow:
@@ -218,6 +285,7 @@ button:focus-visible {
     0 0 72px color-mix(in srgb, var(--color-gentorial-blue) 58%, transparent),
     0 0 92px color-mix(in srgb, var(--color-gentorial-magenta) 48%, transparent);
   filter: blur(4px);
+  animation: orb-shatter-flash 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .orb-filter-defs {
@@ -234,6 +302,22 @@ button:focus-visible {
 
   50% {
     transform: translate3d(0, 7px, 0);
+  }
+}
+
+@keyframes concept-accent-draw {
+  0% {
+    opacity: 0;
+    transform: scaleX(0) rotate(var(--concept-start-angle, -0.8deg));
+  }
+
+  32% {
+    opacity: 0.88;
+  }
+
+  100% {
+    opacity: 0.88;
+    transform: scaleX(1) rotate(var(--concept-end-angle, -0.35deg));
   }
 }
 
@@ -259,6 +343,59 @@ button:focus-visible {
   to {
     opacity: 0.92;
     transform: translate3d(2%, 2%, 0) rotate(2deg);
+  }
+}
+
+@keyframes orb-shard-break {
+  0%,
+  14% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate3d(var(--shard-x), var(--shard-y), 0)
+      rotate(var(--shard-rotate))
+      scale(0.82);
+  }
+}
+
+@keyframes orb-shatter-glow {
+  0% {
+    opacity: 0.52;
+    transform: scale(0.82);
+  }
+
+  55% {
+    opacity: 0.4;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+@keyframes orb-shatter-flash {
+  0% {
+    opacity: 0;
+    transform: scale(0.18);
+  }
+
+  5% {
+    opacity: 0.9;
+  }
+
+  46% {
+    opacity: 0.42;
+    transform: scale(0.82);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
   }
 }
 
