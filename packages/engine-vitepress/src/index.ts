@@ -1,2 +1,2 @@
 export { defineGentorialConfig } from './config.js'
-export { installGentorialMarkdown } from './markdown.js'
+export { gentorialMarkdown, installGentorialMarkdown } from './markdown.js'

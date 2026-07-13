@@ -14,7 +14,7 @@ The project is under active development toward `0.1.0`. Every workspace package 
 - **Generation stays constrained.** Model output must conform to the `GeneratedLesson` protocol; arbitrary HTML, scripts, and Vue templates are rejected.
 - **Failures preserve the tutorial.** The default UI leaves a failed output empty and keeps the author-written lesson untouched; custom integrations may opt into fallback blocks.
 - **Providers and engines stay replaceable.** Course protocols do not depend on a model SDK, Vue, VitePress, Nuxt, or the file system.
-- **BYOK stays server-side by default.** Author keys belong in build processes, local relays, or controlled server environments—not browser bundles.
+- **BYOK is explicit and session-only.** Author keys still belong in build processes, local relays, or controlled servers. Learners may explicitly opt into browser-direct BYOK; the default theme keeps that key only in memory and never writes it into the bundle or browser storage.
 
 ## Authoring model
 
@@ -58,7 +58,7 @@ Explain how this language lineage led to C and which key design influences each 
 :::
 ```
 
-The compiler treats the author-written list as the section scope and attaches a low-interference generate trigger to the nearest heading. Its visual contract is a bare `✦` icon: no visible “Generate” label, background, or border; hover and keyboard focus change only its color or opacity. The accessible name is localized (`按需展开` in Chinese and “Expand on demand” in English).
+The compiler treats the author-written list as the section scope and attaches a low-interference liquid-orb trigger to the nearest heading. The orb communicates idle, generating, success, and failure states without adding a visible “Generate” label. Successful results expose regenerate, copy, feedback, and expand/collapse controls beside the heading.
 
 The generated lesson appears directly in the document flow after the original text. Only its validated `GeneratedLesson` blocks are visible: the result itself has no repeated `✦`, “personalized explanation” label, marker, background, border, or visible loading/error text. Invisible ARIA state may remain for assistive technology. A first failed request leaves this location empty and the author text unchanged; fallback blocks remain available to custom integrations but are not part of the default unobtrusive UI. Regenerating replaces the main result instead of appending another copy. Learners choose `detail`, `tone`, and `narrative` globally, so those preferences shape the explanation without widening its author-defined scope.
 
@@ -88,7 +88,7 @@ Every follow-up still inherits the same `SectionScope`, referenced concept ancho
 
 Requirements:
 
-- Node.js `>=20.19.0`
+- Node.js `>=22.13.0`
 - pnpm `11.1.2`
 
 ```bash
@@ -115,9 +115,11 @@ cd my-course
 npm run dev
 ```
 
+The scaffolder detects npm, pnpm, Yarn, or Bun from the invoking command, asks only for missing course metadata, and can install dependencies and initialize Git. Use `--no-install --no-git` for deterministic CI scaffolding.
+
 ## Project status
 
-The repository currently includes the package foundations, deterministic mock pipeline, document-native explanation output, transient per-result follow-up input, global presentation preferences, a VitePress vertical example, tests, Changesets configuration, and Windows/Ubuntu CI. It still uses version `0.0.0` packages and deterministic mocks rather than a real model. The next milestones include full manifest consumption in the VitePress build, page-level silent-failure and custom-fallback tests, one real build-time provider adapter, audited snapshots, and the complete scaffolder flow.
+The repository currently includes the package foundations, a deterministic fallback pipeline, browser-direct OpenAI, Anthropic, Google, and OpenAI-compatible BYOK adapters, document-native explanation output, per-result follow-up input, global nav preferences, a VitePress vertical example, tests, Changesets configuration, and Windows/Ubuntu CI. Packages remain at `0.0.0`; the next milestones include full manifest consumption in the VitePress build, a production relay path, audited snapshots, and the complete scaffolder and publishing flow.
 
 See [PLAN.md](./PLAN.md) for architecture decisions, security constraints, milestones, and the `0.1.0` completion definition.
 

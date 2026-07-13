@@ -48,6 +48,17 @@ function openTokenInfo(tokens: Token[], index: number): DirectiveInfo {
 }
 
 export function installGentorialMarkdown(md: MarkdownIt): void {
+  const renderFence = md.renderer.rules.fence
+  md.renderer.rules.fence = (tokens, index, options, environment, renderer) => {
+    const token = tokens[index]
+    if (token?.info.trim() === 'mermaid') {
+      return `<GentorialMermaid :graph="${expressionAttribute(md, token.content)}" />\n`
+    }
+    return renderFence
+      ? renderFence(tokens, index, options, environment, renderer)
+      : renderer.renderToken(tokens, index, options)
+  }
+
   md.core.ruler.before('block', 'gentorial_parse_source', (state) => {
     const environment = state.env as Record<string, unknown>
     const file = sourcePathFromEnvironment(environment)
@@ -134,3 +145,5 @@ export function installGentorialMarkdown(md: MarkdownIt): void {
     }
   })
 }
+
+export const gentorialMarkdown = installGentorialMarkdown

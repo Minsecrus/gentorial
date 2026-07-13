@@ -11,6 +11,7 @@ export {
   gentorialRuntimeKey
 } from './runtime.js'
 export type {
+  GentorialByokSession,
   GentorialFollowUpStatus,
   GentorialGenerationState,
   GentorialGenerationStatus,

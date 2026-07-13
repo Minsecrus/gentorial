@@ -3,8 +3,10 @@
 由 Gentorial 创建的生成式教程项目。
 
 ```bash
-pnpm install
-pnpm dev
+__INSTALL_COMMAND__
+__DEV_COMMAND__
 ```
 
-默认页面始终显示作者写明的概念锚点，并使用确定性 mock 演示标题旁的按需讲解、无开发标记的正文直出、学习者偏好，以及结果末尾带 placeholder 和发送按钮的追问输入，不需要 AI 密钥。接入真实提供方时只需替换主题中的统一 `generate` 函数；真实提供方与快照配置会在 Gentorial 后续版本中提供。
+默认页面始终显示作者写明的概念锚点；没有密钥时使用确定性 mock，因此项目可直接启动。导航栏中的偏好按钮会打开 Preferences / BYOK 两步弹窗；学习者明确填写密钥后，生成与追问会改用所选的 OpenAI、Anthropic、Google 或 OpenAI-compatible 端点。密钥只保存在当前页面会话内存中。
+
+模板已默认启用 LaTeX 与 Mermaid。在 Markdown 中使用 `$E = mc^2$` 或 `$$...$$` 编写公式，使用 ```` ```mermaid ```` 代码块编写图示，无需额外配置。

@@ -25,6 +25,14 @@ export type RuntimeGenerationRequest = {
 
 export type RuntimeGenerationContext = {
   signal: AbortSignal
+  byok?: GentorialByokSession
+}
+
+export type GentorialByokSession = {
+  provider: string
+  apiKey: string
+  model?: string
+  endpoint?: string
 }
 
 export type GentorialRegistration = RuntimeGenerationRequest & {
@@ -43,10 +51,12 @@ export type GentorialGenerationState = {
   readonly conversation: readonly LessonConversationTurn[]
   readonly followUpStatus: GentorialFollowUpStatus
   readonly followUpError: string | undefined
+  readonly expanded: boolean
 }
 
 export type GentorialRuntimeOptions = {
   learnerProfile?: LearnerProfile
+  byokSession?: GentorialByokSession
   generate(
     request: RuntimeGenerationRequest,
     context: RuntimeGenerationContext
@@ -56,13 +66,16 @@ export type GentorialRuntimeOptions = {
 export type GentorialRuntime = Plugin & {
   readonly generate: GentorialRuntimeOptions['generate']
   readonly learnerProfile: Ref<LearnerProfile>
+  readonly byokSession: Ref<GentorialByokSession | undefined>
   register(registration: GentorialRegistration): () => void
   getState(id: string): GentorialGenerationState
   run(id: string): Promise<void>
   cancel(id: string): void
   ask(id: string, question: string): Promise<void>
   cancelFollowUp(id: string): void
+  setExpanded(id: string, expanded: boolean): void
   setLearnerProfile(profile: LearnerProfile): void
+  setByokSession(session: GentorialByokSession | undefined): void
 }
 
 type MutableGenerationState = {
@@ -74,6 +87,7 @@ type MutableGenerationState = {
   conversation: LessonConversationTurn[]
   followUpStatus: GentorialFollowUpStatus
   followUpError: string | undefined
+  expanded: boolean
   baseLesson: GeneratedLesson | undefined
 }
 
@@ -105,6 +119,7 @@ function createState(id: string): MutableGenerationState {
     conversation: [],
     followUpStatus: 'idle' as const,
     followUpError: undefined,
+    expanded: false,
     baseLesson: undefined
   })
 }
@@ -124,6 +139,16 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     ...defaultLearnerProfile,
     ...options.learnerProfile
   })
+  const byokSession = ref<GentorialByokSession | undefined>(
+    options.byokSession ? { ...options.byokSession } : undefined
+  )
+
+  function generationContext(signal: AbortSignal): RuntimeGenerationContext {
+    return {
+      signal,
+      ...(byokSession.value ? { byok: { ...byokSession.value } } : {})
+    }
+  }
 
   function mutableState(id: string): MutableGenerationState {
     const current = states.get(id)
@@ -197,7 +222,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     }
 
     try {
-      const lesson = await options.generate(request, { signal: controller.signal })
+      const lesson = await options.generate(request, generationContext(controller.signal))
       const active = requests.get(id)
       if (!active || active.sequence !== sequence || controller.signal.aborted) return
 
@@ -209,6 +234,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
       state.followUpStatus = 'idle'
       state.followUpError = undefined
       state.status = 'success'
+      state.expanded = true
     } catch (error) {
       const active = requests.get(id)
       if (!active || active.sequence !== sequence) return
@@ -254,7 +280,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     }
 
     try {
-      const lesson = await options.generate(request, { signal: controller.signal })
+      const lesson = await options.generate(request, generationContext(controller.signal))
       const active = followUpRequests.get(id)
       if (!active || active.sequence !== sequence || controller.signal.aborted) return
 
@@ -283,6 +309,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
   const runtime: GentorialRuntime = {
     generate: options.generate,
     learnerProfile,
+    byokSession,
     register(registration) {
       const id = registration.generate.id
       if (registrations.has(id)) {
@@ -311,8 +338,14 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     cancel,
     ask,
     cancelFollowUp,
+    setExpanded(id, expanded) {
+      mutableState(id).expanded = expanded
+    },
     setLearnerProfile(profile) {
       learnerProfile.value = { ...profile }
+    },
+    setByokSession(session) {
+      byokSession.value = session ? { ...session } : undefined
     },
     install(app: App) {
       app.provide(gentorialRuntimeKey, runtime)

@@ -7,7 +7,10 @@ export type CreateGentorialProjectOptions = {
   cwd?: string
   title?: string
   lang?: string
+  packageManager?: ProjectPackageManager
 }
+
+export type ProjectPackageManager = 'pnpm' | 'npm' | 'yarn' | 'bun'
 
 export type CreatedGentorialProject = {
   targetDir: string
@@ -42,18 +45,32 @@ async function assertEmptyTarget(targetDir: string): Promise<void> {
 
 function applyTemplateValues(
   source: string,
-  values: { projectName: string; title: string; lang: string }
+  values: {
+    projectName: string
+    title: string
+    lang: string
+    installCommand: string
+    devCommand: string
+  }
 ): string {
   return source
     .replaceAll('__PROJECT_NAME__', values.projectName)
     .replaceAll('__COURSE_TITLE__', values.title)
     .replaceAll('__COURSE_LANG__', values.lang)
+    .replaceAll('__INSTALL_COMMAND__', values.installCommand)
+    .replaceAll('__DEV_COMMAND__', values.devCommand)
 }
 
 async function copyTemplateDirectory(
   sourceDir: string,
   targetDir: string,
-  values: { projectName: string; title: string; lang: string }
+  values: {
+    projectName: string
+    title: string
+    lang: string
+    installCommand: string
+    devCommand: string
+  }
 ): Promise<void> {
   await mkdir(targetDir, { recursive: true })
   const entries = await readdir(sourceDir, { withFileTypes: true })
@@ -84,10 +101,13 @@ export async function createGentorialProject(
   if (validationError) throw new Error(validationError)
 
   await assertEmptyTarget(targetDir)
+  const packageManager = options.packageManager ?? 'pnpm'
   await copyTemplateDirectory(templateDirectory(), targetDir, {
     projectName,
     title: options.title ?? projectName,
-    lang: options.lang ?? 'zh-CN'
+    lang: options.lang ?? 'zh-CN',
+    installCommand: packageManager === 'yarn' ? 'yarn' : `${packageManager} install`,
+    devCommand: packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`
   })
   await mkdir(resolve(targetDir, 'public'), { recursive: true })
 

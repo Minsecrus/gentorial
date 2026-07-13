@@ -29,12 +29,26 @@ describe('createGentorialProject', () => {
       resolve(result.targetDir, 'docs/.vitepress/theme/index.ts'),
       'utf8'
     )
+    const vitepressSource = await readFile(
+      resolve(result.targetDir, 'docs/.vitepress/config.ts'),
+      'utf8'
+    )
 
-    expect(JSON.parse(packageSource)).toMatchObject({ name: 'my-course', private: true })
+    expect(JSON.parse(packageSource)).toMatchObject({
+      name: 'my-course',
+      private: true,
+      devDependencies: {
+        'markdown-it-mathjax3': expect.any(String),
+        mermaid: expect.any(String)
+      }
+    })
     expect(courseSource).toContain("title: '我的课程'")
     expect(themeSource).toContain('createMockGenerator')
     expect(themeSource).toContain('createGentorialRuntime')
     expect(themeSource).toContain('request.conversation')
+    expect(vitepressSource).toContain("import { defineConfig } from 'vitepress'")
+    expect(vitepressSource).toContain('math: true')
+    expect(vitepressSource).toContain('config: gentorialMarkdown')
   })
 
   it('refuses to overwrite a non-empty directory', async () => {

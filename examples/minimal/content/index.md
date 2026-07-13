@@ -4,8 +4,6 @@ title: 在开始编程之前
 
 # 在开始编程之前
 
-<GentorialPreferences />
-
 ## C 的历史
 
 1. ALGOL、CPL、BCPL

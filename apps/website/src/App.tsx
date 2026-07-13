@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import { GenerativeOrb } from './components/GenerativeOrb.js'
 import {
   HeroJourney,
+  type TutorialByok,
   type JourneyView,
   type TutorialPreferences
 } from './components/HeroJourney.js'
@@ -19,7 +20,7 @@ type RevealStage =
   | 'ready'
 
 const repositoryUrl = 'https://github.com/Minsecrus/gentorial'
-const docsUrl = `${repositoryUrl}#readme`
+const docsUrl = `${repositoryUrl}/blob/main/README.zh-CN.md`
 const readUrl = '#/read'
 const desktopLeftTarget = 'erate Y'
 const desktopRightTarget = 'our Tut'
@@ -91,12 +92,11 @@ function SiteNavigation({
             </a>
             <div className="flex items-center gap-4 text-sm sm:gap-6">
               <AnimatePresence mode="popLayout" initial={false}>
-                {preferencesConfigured ? (
-                  preferencesOpen ? null : (
+                {preferencesConfigured && !preferencesOpen ? (
                     <motion.button
                       key="preferences-control"
                       layoutId="tutorial-preferences"
-                      className="inline-flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/12 bg-white text-black/60 transition-colors hover:border-black/35 hover:text-black"
+                      className="inline-flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-full border bg-white text-black/60 transition-colors hover:text-black"
                       type="button"
                       onClick={onExplore}
                       onMouseEnter={() => setPreferencesHovered(true)}
@@ -104,9 +104,22 @@ function SiteNavigation({
                       onFocus={() => setPreferencesHovered(true)}
                       onBlur={() => setPreferencesHovered(false)}
                       aria-label="Adjust tutorial preferences"
-                      animate={{ width: preferencesControlExpanded ? 132 : 36 }}
+                      animate={{
+                        width: preferencesControlExpanded ? 132 : 36,
+                        borderColor: preferencesHovered
+                          ? 'rgb(0 0 0 / 0.35)'
+                          : preferencesControlExpanded
+                            ? 'rgb(0 0 0 / 0.12)'
+                            : 'rgb(0 0 0 / 0)'
+                      }}
                       initial={false}
-                      transition={{ type: 'spring', stiffness: 190, damping: 24, mass: 0.82 }}
+                      transition={{
+                        width: { type: 'spring', stiffness: 190, damping: 24, mass: 0.82 },
+                        borderColor: {
+                          duration: 0.18,
+                          delay: preferencesControlExpanded ? 0 : 0.34
+                        }
+                      }}
                     >
                       <motion.span layout="position" className="inline-flex shrink-0 items-center">
                         <SlidersHorizontal className="size-3.5" strokeWidth={1.7} aria-hidden="true" />
@@ -126,21 +139,10 @@ function SiteNavigation({
                         ) : null}
                       </AnimatePresence>
                     </motion.button>
-                  )
-                ) : (
-                  <motion.button
-                    key="explore-control"
-                    className="text-black/55 transition-colors hover:text-black"
-                    type="button"
-                    onClick={onExplore}
-                    exit={{ opacity: 0 }}
-                  >
-                    Explore
-                  </motion.button>
-                )}
+                ) : null}
               </AnimatePresence>
               <a
-                className="inline-flex items-center gap-1.5 text-black/55 transition-colors hover:text-black"
+                className="text-link-underline inline-flex items-center gap-1.5 text-black/55 transition-colors hover:text-black"
                 href={repositoryUrl}
                 target="_blank"
                 rel="noreferrer"
@@ -173,7 +175,7 @@ function SiteFooter() {
           <span>© 2026 Minsecrus.</span>
           <span aria-hidden="true">·</span>
           <a
-            className="transition-colors hover:text-black"
+            className="text-link-underline transition-colors hover:text-black"
             href="https://github.com/Minsecrus/gentorial/blob/main/LICENSE"
             target="_blank"
             rel="noreferrer"
@@ -231,7 +233,12 @@ export default function App() {
     narrative: '',
     outcome: ''
   })
+  const [tutorialByok, setTutorialByok] = useState<TutorialByok>({
+    provider: 'openai',
+    apiKey: ''
+  })
   const [readPreferencesOpen, setReadPreferencesOpen] = useState(false)
+  const [readPreferencesView, setReadPreferencesView] = useState<'preferences' | 'byok'>('preferences')
   const [page, setPage] = useState<'home' | 'read'>(() => (
     window.location.hash === '#/read' ? 'read' : 'home'
   ))
@@ -368,6 +375,7 @@ export default function App() {
   function handleExplore(): void {
     setPreferencesControlIntro(false)
     if (page === 'read') {
+      setReadPreferencesView('preferences')
       setReadPreferencesOpen(true)
       return
     }
@@ -376,6 +384,10 @@ export default function App() {
 
   function handleContinue(_preferences: TutorialPreferences): void {
     setTypingStep(typingSteps)
+    setJourneyView('byok')
+  }
+
+  function handleOnboardingComplete(): void {
     setPreferencesConfigured(true)
     setPreferencesControlIntro(true)
     setJourneyView('complete')
@@ -387,6 +399,10 @@ export default function App() {
   }
 
   function handleReadPreferencesContinue(_preferences: TutorialPreferences): void {
+    setReadPreferencesView('byok')
+  }
+
+  function handleReadOnboardingComplete(): void {
     setPreferencesConfigured(true)
     setReadPreferencesOpen(false)
     setPreferencesControlIntro(true)
@@ -399,7 +415,9 @@ export default function App() {
           visible={page === 'read' || navigationVisible}
           preferencesConfigured={preferencesConfigured}
           preferencesControlIntro={preferencesControlIntro}
-          preferencesOpen={page === 'read' ? readPreferencesOpen : journeyView === 'preferences'}
+          preferencesOpen={page === 'read'
+            ? readPreferencesOpen
+            : journeyView === 'preferences' || journeyView === 'byok'}
           onExplore={handleExplore}
         />
         {page === 'read' ? (
@@ -407,7 +425,7 @@ export default function App() {
         ) : (
           <section
             id="top"
-            className={`${journeyView === 'preferences'
+            className={`${journeyView === 'preferences' || journeyView === 'byok'
               ? 'hero-grid flex min-h-svh items-start justify-center overflow-visible px-5 pb-12 pt-24 sm:pt-28'
               : 'hero-grid flex min-h-svh items-center justify-center overflow-hidden px-5 py-10'}`}
           >
@@ -543,7 +561,7 @@ export default function App() {
             </motion.div>
             <motion.div
               layout
-              className={`${journeyView === 'preferences'
+              className={`${journeyView === 'preferences' || journeyView === 'byok'
                 ? 'mt-7 w-full'
                 : 'mt-8 min-h-40 w-full sm:mt-10'} flex items-center justify-center`}
               transition={{ layout: { type: 'spring', stiffness: 105, damping: 20 } }}
@@ -574,11 +592,15 @@ export default function App() {
                       docsUrl={docsUrl}
                       readUrl={readUrl}
                       view={journeyView}
+                      byok={tutorialByok}
                       preferences={tutorialPreferences}
-                      onBack={() => setJourneyView('actions')}
+                      onBack={() => setJourneyView(journeyView === 'byok' ? 'preferences' : 'actions')}
+                      onByokChange={setTutorialByok}
                       onContinue={handleContinue}
                       onExplore={handleExplore}
                       onPreferencesChange={setTutorialPreferences}
+                      onSkipByok={handleOnboardingComplete}
+                      onSubmitByok={handleOnboardingComplete}
                     />
                   </motion.div>
                 )}
@@ -614,12 +636,19 @@ export default function App() {
                 <HeroJourney
                   docsUrl={docsUrl}
                   readUrl={readUrl}
-                  view="preferences"
+                  view={readPreferencesView}
+                  byok={tutorialByok}
                   preferences={tutorialPreferences}
-                  onBack={handleReadPreferencesClose}
+                  onBack={() => {
+                    if (readPreferencesView === 'byok') setReadPreferencesView('preferences')
+                    else handleReadPreferencesClose()
+                  }}
+                  onByokChange={setTutorialByok}
                   onContinue={handleReadPreferencesContinue}
                   onExplore={handleExplore}
                   onPreferencesChange={setTutorialPreferences}
+                  onSkipByok={handleReadOnboardingComplete}
+                  onSubmitByok={handleReadOnboardingComplete}
                 />
               </motion.div>
             </div>

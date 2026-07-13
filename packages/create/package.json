@@ -1,6 +1,6 @@
 {
   "name": "@gentorial/create",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Project scaffolder for Gentorial courses.",
   "type": "module",
   "sideEffects": false,
@@ -35,6 +35,9 @@
     "access": "public"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.7.0"
   }
 }

@@ -4,8 +4,6 @@ title: __COURSE_TITLE__
 
 # __COURSE_TITLE__
 
-<GentorialPreferences />
-
 ## 第一个主题
 
 ::: concept first-concept title="第一个概念"

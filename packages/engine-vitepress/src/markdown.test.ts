@@ -6,6 +6,16 @@ import { installGentorialMarkdown } from './index.js'
 afterEach(() => disposeMdItInstance())
 
 describe('installGentorialMarkdown', () => {
+  it('turns mermaid fences into the lazy theme renderer', () => {
+    const markdown = new MarkdownIt()
+    installGentorialMarkdown(markdown)
+
+    const html = markdown.render('```mermaid\nflowchart LR\n  A --> B\n```')
+
+    expect(html).toContain('<GentorialMermaid')
+    expect(html).toContain('flowchart LR')
+  })
+
   it('renders concept anchors into static HTML', () => {
     const markdown = new MarkdownIt()
     installGentorialMarkdown(markdown)

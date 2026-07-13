@@ -14,7 +14,7 @@
 - npm monorepo 根目录与 `pnpm-workspace.yaml`。
 - 根 `package.json`、TypeScript 基础配置、MIT 许可证和 `.gitignore`。
 - pnpm 锁文件与显式依赖构建白名单。
-- Changesets 基础配置与 Windows/Ubuntu、Node 20/24 GitHub Actions CI 矩阵。
+- Changesets 基础配置与 Windows/Ubuntu、Node 22/24 GitHub Actions CI 矩阵。
 - Git 仓库，默认分支为 `main`。
 - 中英文根文档 `README.md` 与 `README.zh-CN.md`。
 - 下列包均已具备 `package.json`、TypeScript 入口、README、测试、构建脚本和可检查的 npm tarball：
@@ -35,7 +35,7 @@
 - VitePress 引擎尚未在构建入口消费完整的课程目录清单。
 - 最小示例尚未加入故意返回错误结构的页面级交互验收。
 - `@gentorial/create` 当前是可打包的非交互模板初始化器，完整交互、安装与 tarball 端到端流程仍待阶段 4 完成。
-- 尚未接入真实模型提供方、BYOK 或作者快照。
+- 已接入 OpenAI、Anthropic、Google 与 OpenAI-compatible 的浏览器会话 BYOK；生产级本地/服务端中继与作者快照尚未实现。
 - 尚未发布任何 npm 包。
 
 继续本项目时，先完整阅读本文，再按“阶段 1”中的剩余任务推进。不要为了快速演示而把 AI、页面引擎或领域校验写进核心包。
@@ -533,13 +533,14 @@ interface GentorialRuntime {
 ### 6.5 `@gentorial/engine-vitepress`
 
 ```ts
-export { defineGentorialConfig } from '@gentorial/engine-vitepress'
+export { gentorialMarkdown } from '@gentorial/engine-vitepress'
 ```
 
 职责：
 
-- 组合 VitePress 配置。
+- 作为原生 VitePress `markdown.config` 回调安装扩展，不引入第二套站点配置。
 - 安装 `concept` 与 `generate` 的 Markdown-it 容器规则。
+- 将 Mermaid fence 交给默认主题的惰性渲染组件。
 - 在构建时编译课程清单。
 - 将页面所需的最小清单交给客户端运行时。
 - 把编译诊断映射为带文件和行号的 VitePress 构建错误。
@@ -550,7 +551,7 @@ export { defineGentorialConfig } from '@gentorial/engine-vitepress'
 export { createGentorialTheme } from '@gentorial/theme-default'
 ```
 
-职责：注册 Vue 组件、样式和无障碍交互。标题入口只显示纯 `✦` 图标，不显示可见文字，也没有背景或边框；hover / focus 只改变颜色或透明度，并提供“按需展开”的无障碍名称。结果正文不设置专属背景、边框、标签或状态文字，只让 `GeneratedLesson` 块沿用正文排版；讲解末尾常驻轻量输入组合，提供“继续追问…” placeholder 和可见“发送”按钮。主题不得负责解析 Markdown 或直接请求模型。
+职责：注册 Vue 组件、样式和无障碍交互。标题入口使用液态小球表达生成状态，成功后提供重新生成、复制、反馈与展开/收起操作。结果正文沿用正文排版；讲解末尾常驻轻量输入组合。主题还负责按需加载 Mermaid 客户端渲染器，但不直接请求模型。
 
 ### 6.7 `@gentorial/create`
 

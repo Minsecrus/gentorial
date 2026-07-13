@@ -17,7 +17,7 @@ app.use(createGentorialRuntime({
 }))
 ```
 
-新的页面集成由两个组件组成：把 `GentorialGenerateTrigger` 放在标题中，把 `GentorialGeneratedRegion` 放在作者原文之后。两者只通过稳定的生成 ID 关联；重新生成会替换旧结果，取消或过期请求不会覆盖新结果。`GentorialPreferences` 提供全局的内容深度、表达语气与叙事方式选择。
+新的页面集成由两个组件组成：把 `GentorialGenerateTrigger` 放在标题中，把 `GentorialGeneratedRegion` 放在作者原文之后。两者只通过稳定的生成 ID 关联；重新生成会替换旧结果，取消或过期请求不会覆盖新结果。`GentorialPreferences` 使用与门户一致的两步流程：先选择内容偏好，再选择可跳过的 BYOK；密钥只保存在当前页面的内存中。
 
 默认结果区只顺序渲染 `GeneratedLesson` blocks，不显示来源标签、角色、问题、等待提示或错误说明。讲解出现后，末尾常驻一个带“继续追问…” placeholder 的单行输入和“发送”按钮，不依赖点击教程正文来唤起。Enter 或按钮提交，Escape 取消活动追问并清空草稿；成功回答通过 `LessonBlockRenderer` 插入输入框上方，用户问题不进入可见结果。初次请求尚未完成或失败时，默认组件返回 `null`；`fallback` 与错误状态仍保留在运行时，供自定义界面按需使用。
 

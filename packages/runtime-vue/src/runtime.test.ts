@@ -130,6 +130,30 @@ describe('createGentorialRuntime', () => {
     expect(generate.mock.calls[0]?.[0].learner).toEqual(runtime.learnerProfile.value)
   })
 
+  it('forwards the in-memory BYOK session only through generation context', async () => {
+    const generate = vi.fn().mockResolvedValue(lesson('byok'))
+    const runtime = createGentorialRuntime({ generate })
+    runtime.register({ generate: spec, concepts: [concept] })
+    runtime.setByokSession({
+      provider: 'custom',
+      apiKey: 'session-secret',
+      model: 'local-model',
+      endpoint: 'http://localhost:11434/v1'
+    })
+
+    await runtime.run(spec.id)
+
+    expect(generate.mock.calls[0]?.[1]).toMatchObject({
+      byok: {
+        provider: 'custom',
+        apiKey: 'session-secret',
+        model: 'local-model',
+        endpoint: 'http://localhost:11434/v1'
+      }
+    })
+    expect(generate.mock.calls[0]?.[0]).not.toHaveProperty('byok')
+  })
+
   it('aborts a request and ignores a result that arrives after cancellation', async () => {
     const pending = deferred<GeneratedLesson>()
     let signal: AbortSignal | undefined

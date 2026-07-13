@@ -16,6 +16,7 @@ describe('createGentorialTheme', () => {
     expect(component).toHaveBeenCalledWith('GentorialGeneratedRegion', expect.anything())
     expect(component).toHaveBeenCalledWith('GentorialGenerateTrigger', expect.anything())
     expect(component).toHaveBeenCalledWith('GentorialPreferences', expect.anything())
+    expect(component).toHaveBeenCalledWith('GentorialMermaid', expect.anything())
     expect(component).toHaveBeenCalledWith('LessonBlockRenderer', expect.anything())
   })
 })

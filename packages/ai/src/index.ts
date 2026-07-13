@@ -1,5 +1,11 @@
 export { createMockGenerator } from './mock.js'
 export type { MockGeneratorOptions } from './mock.js'
+export { createBrowserByokGenerator } from './byok.js'
+export type {
+  BrowserByokCredentials,
+  BrowserByokGeneratorOptions,
+  BrowserByokProvider
+} from './byok.js'
 export { createGenerationPipeline, createRemoteGenerator } from './pipeline.js'
 export { compileGenerationPrompt, defaultPromptCompiler } from './prompt.js'
 export {

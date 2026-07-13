@@ -146,7 +146,7 @@ describe('GentorialPreferences', () => {
 })
 
 describe('GentorialGenerateTrigger', () => {
-  it('uses the section label and changes from generate to cancel to regenerate', async () => {
+  it('uses the section label and changes from generate to busy to result controls', async () => {
     let requestSignal: AbortSignal | undefined
     const generate = vi.fn(async (_request, context) => {
       requestSignal = context.signal
@@ -160,21 +160,27 @@ describe('GentorialGenerateTrigger', () => {
       runtime
     )
 
-    const idleButton = render()
+    const idleRoot = render()
+    const idleButton = findVNode(idleRoot, (candidate) => candidate.type === 'button')!
     expect(idleButton.props?.['aria-label']).toBe('按需展开：C 的历史')
-    expect(idleButton.props?.class).toContain('ignore-header')
 
     invoke(idleButton, 'onClick')
-    const loadingButton = render()
-    expect(loadingButton.props?.['aria-label']).toBe('取消展开：C 的历史')
+    const loadingButton = findVNode(render(), (candidate) => candidate.type === 'button')!
+    expect(loadingButton.props?.['aria-label']).toBe('正在生成：C 的历史')
 
     await Promise.resolve()
-    const successButton = render()
+    const successRoot = render()
+    const successButton = findVNode(successRoot, (candidate) =>
+      hasClass(candidate, 'gentorial-generate-trigger')
+    )!
     expect(requestSignal?.aborted).toBe(false)
-    expect(successButton.props?.['aria-label']).toBe('重新展开：C 的历史')
+    expect(successButton.props?.['aria-label']).toBe('显示结果操作：C 的历史')
+    expect(findVNode(successRoot, (candidate) =>
+      hasClass(candidate, 'gentorial-generation-toolbar')
+    )).toBeDefined()
   })
 
-  it('cancels the active request when clicked while loading', () => {
+  it('does not restart or cancel the active request when clicked while loading', () => {
     let requestSignal: AbortSignal | undefined
     const generate = vi.fn((_request, context) => {
       requestSignal = context.signal
@@ -188,11 +194,11 @@ describe('GentorialGenerateTrigger', () => {
       runtime
     )
 
-    invoke(render(), 'onClick')
-    invoke(render(), 'onClick')
+    invoke(findVNode(render(), (candidate) => hasClass(candidate, 'gentorial-generate-trigger'))!, 'onClick')
+    invoke(findVNode(render(), (candidate) => hasClass(candidate, 'gentorial-generate-trigger'))!, 'onClick')
 
-    expect(requestSignal?.aborted).toBe(true)
-    expect(runtime.getState(spec.id).status).toBe('idle')
+    expect(requestSignal?.aborted).toBe(false)
+    expect(runtime.getState(spec.id).status).toBe('loading')
   })
 })
 

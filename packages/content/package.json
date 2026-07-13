@@ -1,6 +1,6 @@
 {
   "name": "@gentorial/content",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Framework-neutral lesson parsing and Node.js course compilation for Gentorial.",
   "type": "module",
   "sideEffects": false,

@@ -1,4 +1,8 @@
-import { createMockGenerator } from '@gentorial/ai'
+import {
+  createBrowserByokGenerator,
+  createMockGenerator,
+  type BrowserByokProvider
+} from '@gentorial/ai'
 import { createGentorialRuntime } from '@gentorial/runtime-vue'
 import { createGentorialTheme } from '@gentorial/theme-default'
 import '@gentorial/theme-default/style.css'
@@ -12,16 +16,20 @@ const runtime = createGentorialRuntime({
     narrative: 'direct'
   },
   generate(request, context) {
-    return generator.generate(
-      {
-        course,
-        generate: request.generate,
-        concepts: request.concepts,
-        ...(request.learner ? { learner: request.learner } : {}),
-        ...(request.conversation ? { conversation: request.conversation } : {})
-      },
-      { signal: context.signal }
-    )
+    const input = {
+      course,
+      generate: request.generate,
+      concepts: request.concepts,
+      ...(request.learner ? { learner: request.learner } : {}),
+      ...(request.conversation ? { conversation: request.conversation } : {})
+    }
+    const activeGenerator = context.byok
+      ? createBrowserByokGenerator({
+          ...context.byok,
+          provider: context.byok.provider as BrowserByokProvider
+        })
+      : generator
+    return activeGenerator.generate(input, { signal: context.signal })
   }
 })
 

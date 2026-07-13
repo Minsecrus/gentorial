@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineCourse, type ConceptSpec, type GenerateSpec } from '@gentorial/core'
 import {
   compileGenerationPrompt,
+  createBrowserByokGenerator,
   createMockGenerator,
   GenerationValidationError,
   type GenerationInput,
@@ -153,6 +154,53 @@ describe('createMockGenerator', () => {
     expect(JSON.stringify(lesson)).not.toMatch(/确定性|Mock|叙事=|详略=|依据：/u)
     expect(lesson.grounding.conceptIds).toEqual(['switch-discrete'])
     expect(lesson.grounding.sourceIds).toEqual(['section-switch'])
+  })
+})
+
+describe('createBrowserByokGenerator', () => {
+  const lessonResponse = {
+    schemaVersion: '1',
+    blocks: [{ type: 'paragraph', text: '真实提供方返回的讲解。' }],
+    grounding: { conceptIds: ['switch-discrete'], sourceIds: ['section-switch'] }
+  }
+
+  it.each([
+    {
+      provider: 'openai' as const,
+      response: { choices: [{ message: { content: JSON.stringify(lessonResponse) } }] },
+      url: 'https://api.openai.com/v1/chat/completions',
+      header: 'authorization'
+    },
+    {
+      provider: 'anthropic' as const,
+      response: { content: [{ type: 'text', text: JSON.stringify(lessonResponse) }] },
+      url: 'https://api.anthropic.com/v1/messages',
+      header: 'x-api-key'
+    },
+    {
+      provider: 'google' as const,
+      response: { candidates: [{ content: { parts: [{ text: JSON.stringify(lessonResponse) }] } }] },
+      url: 'https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent',
+      header: 'x-goog-api-key'
+    }
+  ])('sends and validates $provider structured output', async ({ provider, response, url, header }) => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'content-type': 'application/json' }
+    }))
+    const generator = createBrowserByokGenerator(
+      { provider, apiKey: 'test-secret', model: 'test-model' },
+      { fetch: fetchMock as typeof fetch }
+    )
+
+    const lesson = await generator.generate(input)
+
+    expect(lesson).toEqual(lessonResponse)
+    expect(fetchMock).toHaveBeenCalledOnce()
+    const [requestUrl, init] = fetchMock.mock.calls[0]!
+    expect(requestUrl).toBe(url)
+    expect((init as RequestInit).headers).toMatchObject({ [header]: expect.stringContaining('test-secret') })
+    expect((init as RequestInit).body).not.toContain('test-secret')
   })
 })
 
