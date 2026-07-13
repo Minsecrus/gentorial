@@ -1,13 +1,13 @@
-import { ArrowUpRight } from 'lucide-react'
+import { ArrowUpRight, SlidersHorizontal } from 'lucide-react'
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from 'motion/react'
-import { useEffect, useState } from 'react'
-import { GeneratedSurface } from './components/GeneratedSurface.js'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { GenerativeOrb } from './components/GenerativeOrb.js'
 import {
   HeroJourney,
   type JourneyView,
   type TutorialPreferences
 } from './components/HeroJourney.js'
+import { ReadTutorial } from './components/ReadTutorial.js'
 
 type RevealStage =
   | 'idle'
@@ -17,11 +17,10 @@ type RevealStage =
   | 'navigation'
   | 'description'
   | 'ready'
-  | 'generating'
-  | 'generated'
 
 const repositoryUrl = 'https://github.com/Minsecrus/gentorial'
 const docsUrl = `${repositoryUrl}#readme`
+const readUrl = '#/read'
 const desktopLeftTarget = 'erate Y'
 const desktopRightTarget = 'our Tut'
 const mobileTopTarget = 'erate'
@@ -36,9 +35,7 @@ const stageRank: Record<RevealStage, number> = {
   typing: 3,
   navigation: 4,
   description: 5,
-  ready: 6,
-  generating: 7,
-  generated: 8
+  ready: 6
 }
 
 function BrandMark({ compact = false }: { compact?: boolean }) {
@@ -57,11 +54,24 @@ function BrandMark({ compact = false }: { compact?: boolean }) {
 
 function SiteNavigation({
   visible,
+  preferencesConfigured,
+  preferencesControlIntro,
+  preferencesOpen,
   onExplore
 }: {
   visible: boolean
+  preferencesConfigured: boolean
+  preferencesControlIntro: boolean
+  preferencesOpen: boolean
   onExplore: () => void
 }) {
+  const [preferencesHovered, setPreferencesHovered] = useState(false)
+  const preferencesControlExpanded = preferencesControlIntro || preferencesHovered
+
+  useEffect(() => {
+    if (preferencesOpen) setPreferencesHovered(false)
+  }, [preferencesOpen])
+
   return (
     <AnimatePresence>
       {visible ? (
@@ -76,17 +86,59 @@ function SiteNavigation({
             className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12"
             aria-label="主导航"
           >
-            <a className="inline-flex items-center" href="#top" aria-label="GenTorial 首页">
+            <a className="inline-flex items-center" href="#/" aria-label="GenTorial 首页">
               <BrandMark compact />
             </a>
-            <div className="flex items-center gap-5 text-sm sm:gap-8">
-              <button
-                className="text-black/55 transition-colors hover:text-black"
-                type="button"
-                onClick={onExplore}
-              >
-                Explore
-              </button>
+            <div className="flex items-center gap-4 text-sm sm:gap-6">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {preferencesConfigured ? (
+                  preferencesOpen ? null : (
+                    <motion.button
+                      key="preferences-control"
+                      layoutId="tutorial-preferences"
+                      className="inline-flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-black/12 bg-white text-black/60 transition-colors hover:border-black/35 hover:text-black"
+                      type="button"
+                      onClick={onExplore}
+                      onMouseEnter={() => setPreferencesHovered(true)}
+                      onMouseLeave={() => setPreferencesHovered(false)}
+                      onFocus={() => setPreferencesHovered(true)}
+                      onBlur={() => setPreferencesHovered(false)}
+                      aria-label="Adjust tutorial preferences"
+                      animate={{ width: preferencesControlExpanded ? 132 : 36 }}
+                      initial={false}
+                      transition={{ type: 'spring', stiffness: 190, damping: 24, mass: 0.82 }}
+                    >
+                      <motion.span layout="position" className="inline-flex shrink-0 items-center">
+                        <SlidersHorizontal className="size-3.5" strokeWidth={1.7} aria-hidden="true" />
+                      </motion.span>
+                      <AnimatePresence initial={false}>
+                        {preferencesControlExpanded ? (
+                          <motion.span
+                            key="preferences-label"
+                            className="ml-2 whitespace-nowrap"
+                            initial={{ width: 0 }}
+                            animate={{ width: 'auto' }}
+                            exit={{ width: 0, marginLeft: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            Preferences
+                          </motion.span>
+                        ) : null}
+                      </AnimatePresence>
+                    </motion.button>
+                  )
+                ) : (
+                  <motion.button
+                    key="explore-control"
+                    className="text-black/55 transition-colors hover:text-black"
+                    type="button"
+                    onClick={onExplore}
+                    exit={{ opacity: 0 }}
+                  >
+                    Explore
+                  </motion.button>
+                )}
+              </AnimatePresence>
               <a
                 className="inline-flex items-center gap-1.5 text-black/55 transition-colors hover:text-black"
                 href={repositoryUrl}
@@ -101,6 +153,36 @@ function SiteNavigation({
         </motion.header>
       ) : null}
     </AnimatePresence>
+  )
+}
+
+function SiteFooter() {
+  return (
+    <footer className="border-t border-black/10 bg-white px-5 sm:px-8 lg:px-12">
+      <div className="mx-auto grid max-w-[1440px] gap-8 py-10 sm:grid-cols-2 sm:items-end sm:py-12">
+        <div className="space-y-2">
+          <a className="inline-flex items-center" href="#/" aria-label="GenTorial 首页">
+            <BrandMark compact />
+          </a>
+          <p className="text-sm font-light text-black/52">
+            Author-defined, learner-shaped tutorials.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-black/40 sm:justify-end">
+          <span>© 2026 Minsecrus.</span>
+          <span aria-hidden="true">·</span>
+          <a
+            className="transition-colors hover:text-black"
+            href="https://github.com/Minsecrus/gentorial/blob/main/LICENSE"
+            target="_blank"
+            rel="noreferrer"
+          >
+            MIT License
+          </a>
+        </div>
+      </div>
+    </footer>
   )
 }
 
@@ -141,15 +223,24 @@ export default function App() {
   const reduceMotion = useReducedMotion()
   const [stage, setStage] = useState<RevealStage>('idle')
   const [typingStep, setTypingStep] = useState(0)
-  const [surfaceVersion, setSurfaceVersion] = useState(0)
   const [journeyView, setJourneyView] = useState<JourneyView | 'orb'>('orb')
+  const [preferencesConfigured, setPreferencesConfigured] = useState(false)
+  const [preferencesControlIntro, setPreferencesControlIntro] = useState(false)
+  const [tutorialPreferences, setTutorialPreferences] = useState<TutorialPreferences>({
+    depth: '',
+    narrative: '',
+    outcome: ''
+  })
+  const [readPreferencesOpen, setReadPreferencesOpen] = useState(false)
+  const [page, setPage] = useState<'home' | 'read'>(() => (
+    window.location.hash === '#/read' ? 'read' : 'home'
+  ))
 
   const initialTVisible = stage === 'idle'
   const titleSeparated = stageRank[stage] >= stageRank.splitting
   const typingActive = stage === 'typing'
   const navigationVisible = stageRank[stage] >= stageRank.navigation
   const descriptionVisible = stageRank[stage] >= stageRank.description
-  const generated = stage === 'generated'
   const desktopLeftInsert = desktopLeftTarget.slice(0, typingStep)
   const desktopRightInsert = desktopRightTarget.slice(
     Math.max(desktopRightTarget.length - typingStep, 0)
@@ -232,14 +323,40 @@ export default function App() {
   }, [reduceMotion, stage])
 
   useEffect(() => {
-    if (stage !== 'generating') return
-    const timeout = window.setTimeout(() => {
-      setSurfaceVersion((version) => version + 1)
-      setJourneyView('complete')
-      setStage('generated')
-    }, reduceMotion ? 0 : 920)
+    if (!preferencesControlIntro) return
+    const timeout = window.setTimeout(
+      () => setPreferencesControlIntro(false),
+      reduceMotion ? 0 : 1150
+    )
     return () => window.clearTimeout(timeout)
-  }, [reduceMotion, stage])
+  }, [preferencesControlIntro, reduceMotion])
+
+  useEffect(() => {
+    const handleHashChange = (): void => {
+      const nextPage = window.location.hash === '#/read' ? 'read' : 'home'
+      setPage(nextPage)
+      if (nextPage === 'home') setReadPreferencesOpen(false)
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  useLayoutEffect(() => {
+    if (!readPreferencesOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') handleReadPreferencesClose()
+    }
+
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [readPreferencesOpen])
 
   function handleOrbActivate(): void {
     if (stage === 'idle') {
@@ -249,27 +366,55 @@ export default function App() {
   }
 
   function handleExplore(): void {
+    setPreferencesControlIntro(false)
+    if (page === 'read') {
+      setReadPreferencesOpen(true)
+      return
+    }
     setJourneyView('preferences')
   }
 
   function handleContinue(_preferences: TutorialPreferences): void {
     setTypingStep(typingSteps)
-    setJourneyView('generating')
-    setStage('generating')
+    setPreferencesConfigured(true)
+    setPreferencesControlIntro(true)
+    setJourneyView('complete')
+  }
+
+  function handleReadPreferencesClose(): void {
+    setReadPreferencesOpen(false)
+    if (preferencesConfigured) setPreferencesControlIntro(true)
+  }
+
+  function handleReadPreferencesContinue(_preferences: TutorialPreferences): void {
+    setPreferencesConfigured(true)
+    setReadPreferencesOpen(false)
+    setPreferencesControlIntro(true)
   }
 
   return (
     <main className="min-h-svh bg-white text-black">
-      <SiteNavigation visible={navigationVisible} onExplore={handleExplore} />
       <LayoutGroup>
-        <section
-          id="top"
-          className="hero-grid flex min-h-svh items-center justify-center overflow-hidden px-5 py-10"
-        >
+        <SiteNavigation
+          visible={page === 'read' || navigationVisible}
+          preferencesConfigured={preferencesConfigured}
+          preferencesControlIntro={preferencesControlIntro}
+          preferencesOpen={page === 'read' ? readPreferencesOpen : journeyView === 'preferences'}
+          onExplore={handleExplore}
+        />
+        {page === 'read' ? (
+          <ReadTutorial />
+        ) : (
+          <section
+            id="top"
+            className={`${journeyView === 'preferences'
+              ? 'hero-grid flex min-h-svh items-start justify-center overflow-visible px-5 pb-12 pt-24 sm:pt-28'
+              : 'hero-grid flex min-h-svh items-center justify-center overflow-hidden px-5 py-10'}`}
+          >
           <motion.div
-            layout
+            layout="position"
             className="flex w-full max-w-6xl flex-col items-center justify-center text-center"
-            transition={{ layout: { type: 'spring', stiffness: 110, damping: 20 } }}
+            transition={{ layout: { type: 'spring', stiffness: 105, damping: 22, mass: 0.92 } }}
           >
             <motion.div
               layout
@@ -427,21 +572,61 @@ export default function App() {
                   >
                     <HeroJourney
                       docsUrl={docsUrl}
+                      readUrl={readUrl}
                       view={journeyView}
+                      preferences={tutorialPreferences}
                       onBack={() => setJourneyView('actions')}
                       onContinue={handleContinue}
                       onExplore={handleExplore}
+                      onPreferencesChange={setTutorialPreferences}
                     />
                   </motion.div>
                 )}
               </AnimatePresence>
             </motion.div>
           </motion.div>
-        </section>
+          </section>
+        )}
+        <AnimatePresence>
+          {page === 'read' && readPreferencesOpen ? (
+            <div
+              className="dialog-scroll fixed inset-0 z-[60] overflow-y-auto px-5 pb-10 pt-24 sm:px-8 sm:pt-28"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Tutorial preferences"
+            >
+              <motion.div
+                className="fixed inset-0 -z-10 bg-white/76 backdrop-blur-md"
+                aria-hidden="true"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: reduceMotion ? 0 : 0.28 }}
+                onMouseDown={handleReadPreferencesClose}
+              />
+              <motion.div
+                className="relative mx-auto flex min-h-[calc(100svh-8.5rem)] max-w-6xl items-start justify-center sm:min-h-[calc(100svh-9.5rem)] sm:items-center"
+                initial={{ y: reduceMotion ? 0 : 10 }}
+                animate={{ y: 0 }}
+                exit={{ y: reduceMotion ? 0 : 8 }}
+                transition={{ duration: reduceMotion ? 0 : 0.34, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <HeroJourney
+                  docsUrl={docsUrl}
+                  readUrl={readUrl}
+                  view="preferences"
+                  preferences={tutorialPreferences}
+                  onBack={handleReadPreferencesClose}
+                  onContinue={handleReadPreferencesContinue}
+                  onExplore={handleExplore}
+                  onPreferencesChange={setTutorialPreferences}
+                />
+              </motion.div>
+            </div>
+          ) : null}
+        </AnimatePresence>
       </LayoutGroup>
-      <AnimatePresence mode="wait">
-        {generated ? <GeneratedSurface key={surfaceVersion} /> : null}
-      </AnimatePresence>
+      {page === 'read' || journeyView !== 'orb' ? <SiteFooter /> : null}
     </main>
   )
 }

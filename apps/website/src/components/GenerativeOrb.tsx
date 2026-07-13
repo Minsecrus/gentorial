@@ -19,6 +19,76 @@ type GenerativeOrbProps = {
 }
 
 const liquidFilterId = 'gentorial-liquid-warp'
+const warpGridOffsets = Array.from({ length: 17 }, (_, index) => (index - 8) * 32)
+
+function createWarpedLine(axis: 'horizontal' | 'vertical', offset: number, strength: number): string {
+  const points: string[] = []
+
+  for (let step = -288; step <= 288; step += 8) {
+    const x = axis === 'vertical' ? offset : step
+    const y = axis === 'vertical' ? step : offset
+    const radius = Math.hypot(x, y)
+    const influence = Math.exp(-Math.pow((radius - 132) / 92, 2))
+    const outerProgress = Math.max(0, Math.min(1, (radius - 190) / 86))
+    const outerFade = 1 - outerProgress * outerProgress * (3 - 2 * outerProgress)
+    const displacement = strength * influence * outerFade
+    const mappedRadius = Math.max(radius - displacement, 0)
+    const scale = radius === 0 ? 1 : mappedRadius / radius
+    const mappedX = 300 + x * scale
+    const mappedY = 300 + y * scale
+    points.push(`${points.length === 0 ? 'M' : 'L'}${mappedX.toFixed(2)} ${mappedY.toFixed(2)}`)
+  }
+
+  return points.join(' ')
+}
+
+const restingWarpPaths = warpGridOffsets.flatMap((offset) => [
+  createWarpedLine('vertical', offset, 18),
+  createWarpedLine('horizontal', offset, 18)
+])
+
+const activeWarpPaths = warpGridOffsets.flatMap((offset) => [
+  createWarpedLine('vertical', offset, 34),
+  createWarpedLine('horizontal', offset, 34)
+])
+
+const flatWarpPaths = warpGridOffsets.flatMap((offset) => [
+  createWarpedLine('vertical', offset, 0),
+  createWarpedLine('horizontal', offset, 0)
+])
+
+function OrbitalGridWarp({
+  active,
+  reducedMotion,
+  shattering
+}: {
+  active: boolean
+  reducedMotion: boolean
+  shattering: boolean
+}) {
+  const targetPaths = shattering
+    ? flatWarpPaths
+    : active ? activeWarpPaths : restingWarpPaths
+
+  return (
+    <span className="orb-grid-warp absolute" aria-hidden="true">
+      <svg className="orb-grid-warp-layer" viewBox="0 0 600 600">
+        {restingWarpPaths.map((path, index) => (
+          <motion.path
+            key={index}
+            initial={false}
+            d={path}
+            animate={{ d: targetPaths[index] ?? path }}
+            transition={{
+              duration: reducedMotion ? 0 : shattering ? 0.52 : 0.9,
+              ease: [0.16, 1, 0.3, 1]
+            }}
+          />
+        ))}
+      </svg>
+    </span>
+  )
+}
 
 const orbShards = [
   { clipPath: 'polygon(50% 50%, 50% 0%, 75% 7%)', x: 22, y: -86, rotate: 18, delay: 0 },
@@ -117,10 +187,16 @@ export function GenerativeOrb({ onActivate, onShatterComplete }: GenerativeOrbPr
   return (
     <div
       className="orb-float-shell relative"
+      data-active={active ? 'true' : 'false'}
       data-shattering={shattering ? 'true' : 'false'}
     >
+      <OrbitalGridWarp
+        active={active}
+        reducedMotion={Boolean(reducedMotion)}
+        shattering={shattering}
+      />
       <motion.button
-        className="orb-button relative grid size-[min(58vw,13.5rem)] place-items-center rounded-full sm:size-[15.5rem] lg:size-[18rem]"
+        className="orb-button relative z-10 grid size-[min(58vw,13.5rem)] place-items-center rounded-full sm:size-[15.5rem] lg:size-[18rem]"
         type="button"
         aria-label="展开生成式界面"
         aria-controls="hero-flow"
