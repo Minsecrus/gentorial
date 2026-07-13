@@ -51,8 +51,8 @@ const preferenceGroups = [
 const scaffoldCommands = {
   npm: 'npm create @gentorial@latest',
   pnpm: 'pnpm create @gentorial@latest',
-  yarn: 'yarn create @gentorial@latest',
-  bun: 'bun create @gentorial@latest'
+  yarn: 'yarn dlx -p @gentorial/create@latest create-gentorial',
+  bun: 'bunx -p @gentorial/create@latest create-gentorial'
 } as const
 
 type PackageManager = keyof typeof scaffoldCommands

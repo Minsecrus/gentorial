@@ -1,128 +1,226 @@
 # Gentorial
 
-> Generate a tutorial for every learner—without giving up the teaching specification.
+> Author-defined, learner-shaped tutorials.
 
-[简体中文](./README.zh-CN.md) · English
+[![CI](https://github.com/Minsecrus/gentorial/actions/workflows/ci.yml/badge.svg)](https://github.com/Minsecrus/gentorial/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@gentorial/create?label=%40gentorial%2Fcreate)](https://www.npmjs.com/package/@gentorial/create)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.13-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/license-MIT-black.svg)](./LICENSE)
 
-Gentorial is an open-source framework for generative tutorials. Authors write the concepts, boundaries, and accuracy requirements that must remain stable, then use short local prompts to request explanations, examples, comparisons, exercises, or feedback. Gentorial compiles those inputs, calls a replaceable generator, validates the structured result, and renders only registered lesson blocks.
+[中文文档](./README.zh-CN.md)
 
-The project is under active development toward `0.1.0`. Every workspace package is currently versioned `0.0.0`, and no npm package has been published yet.
+Gentorial is a VitePress-first framework for tutorials that combine durable, author-written knowledge with explanations generated for each learner. Authors define the facts, scope, and accuracy policies that must remain stable. Learners choose the depth, tone, narrative style, and examples that help them understand those facts.
 
-## Why Gentorial?
+The original tutorial always remains readable. AI is an optional layer attached to explicit points in the document, not a replacement for the source material.
 
-- **Concepts stay explicit.** Author-written concept anchors are rendered into static HTML and cannot be replaced by generated prose.
-- **Generation stays constrained.** Model output must conform to the `GeneratedLesson` protocol; arbitrary HTML, scripts, and Vue templates are rejected.
-- **Failures preserve the tutorial.** The default UI leaves a failed output empty and keeps the author-written lesson untouched; custom integrations may opt into fallback blocks.
-- **Providers and engines stay replaceable.** Course protocols do not depend on a model SDK, Vue, VitePress, Nuxt, or the file system.
-- **BYOK is explicit and session-only.** Author keys still belong in build processes, local relays, or controlled servers. Learners may explicitly opt into browser-direct BYOK; the default theme keeps that key only in memory and never writes it into the bundle or browser storage.
+## Why Gentorial
 
-## Authoring model
+Conventional documentation gives every learner the same explanation. General-purpose chat can adapt its wording, but often loses the author's intended scope and source of truth. Gentorial keeps those responsibilities separate:
+
+- **Authors define the curriculum.** Concept anchors, source sections, generation prompts, and accuracy policies live in version-controlled files.
+- **Learners shape the presentation.** Global preferences affect detail, tone, narrative, and examples without rewriting the underlying claims.
+- **Generated content stays in the document.** Explanations appear after the relevant source section and can be regenerated, copied, collapsed, or followed up in place.
+- **AI remains optional.** A deterministic mock works without credentials; learners may explicitly enable BYOK for supported providers.
+
+## Features
+
+- Native VitePress configuration—no parallel site-config abstraction.
+- `concept` and `generate` Markdown containers with stable IDs and section scope.
+- Structured generated lessons validated before rendering.
+- Vue 3 runtime with cancellation, stale-request protection, regeneration, and follow-up questions.
+- Global learner preferences shared across generated sections.
+- Browser BYOK adapters for OpenAI, Anthropic, Google, and OpenAI-compatible endpoints.
+- Memory-only handling of learner API keys.
+- LaTeX through VitePress MathJax support and lazy Mermaid rendering.
+- Interactive scaffolder with npm, pnpm, Yarn, and Bun support.
+- Accessible default theme with no `v-html` path for model output.
+
+## Quick start
+
+Requirements:
+
+- Node.js `>=22.13.0`
+- One of npm, pnpm, Yarn 2+, or Bun
+
+Create a project with your preferred package manager:
+
+```bash
+# npm
+npm create @gentorial@latest my-course
+
+# pnpm
+pnpm create @gentorial@latest my-course
+
+# Yarn 2+
+yarn dlx -p @gentorial/create@latest create-gentorial my-course
+
+# Bun
+bunx -p @gentorial/create@latest create-gentorial my-course
+```
+
+The scaffolder asks for missing course metadata, detects the invoking package manager, and optionally installs dependencies and initializes Git. Then start the generated site using the command printed by the scaffolder—for example:
+
+```bash
+cd my-course
+pnpm dev
+```
+
+The starter opens without an API key. It uses the deterministic generator until the learner explicitly configures BYOK.
+
+## Generated project
+
+```text
+my-course/
+├─ content/
+│  └─ index.md
+├─ docs/
+│  └─ .vitepress/
+│     ├─ config.ts
+│     └─ theme/
+│        └─ index.ts
+├─ course.config.ts
+├─ package.json
+├─ README.md
+└─ tsconfig.json
+```
+
+- `content/` contains the author-written tutorial.
+- `docs/.vitepress/config.ts` is a normal VitePress configuration file.
+- `docs/.vitepress/theme/index.ts` connects the Gentorial runtime and generator.
+- `course.config.ts` defines stable course metadata, generation mode, locale, and accuracy policies.
+
+## Write a tutorial
+
+Authoritative material is ordinary Markdown. Add a `concept` block for a claim that generated explanations must preserve, then attach a `generate` block to the section where adaptation is useful:
 
 ```md
-::: concept switch-discrete title="Where switch applies"
-`switch` selects a branch from the discrete result of an integer expression after integer promotion.
+## When to use `switch`
+
+::: concept switch-discrete title="Discrete branches"
+`switch` selects a branch from the discrete result of an integer expression.
 :::
 
-## Continuous ranges
-
-Score intervals describe ranges rather than individual discrete values.
+Range checks describe continuous intervals, so an `if` chain is usually clearer.
 
 ::: generate switch-range kind=example concepts=switch-discrete
-Show why switch is not a direct fit for continuous ranges such as score intervals.
-:::
-
-## Similar branches
-
-Repeated branches can obscure a data-driven structure when only their values differ.
-
-::: generate switch-table kind=example concepts=switch-discrete
-Show how repeated branches can sometimes be replaced with table-driven code.
+Explain why `switch` is not a direct fit for score ranges, then show a concise alternative.
 :::
 ```
 
-The concept body is part of the course specification and the static page. The generate body is a local teaching intent; course-level policies, referenced concepts, learner preferences, and the output schema are added by the framework.
+The `generate` block receives the current section as its source scope and explicitly references any required concept anchors. The generated result is inserted after the author-written source rather than replacing it.
 
-### Generate from an authored section
+Supported generation kinds are `explanation`, `example`, `comparison`, `exercise`, and `feedback`.
 
-An ordinary section can provide the content boundary even when it does not need a separate concept anchor:
+## VitePress integration
 
-```md
-## History of C
+Gentorial uses VitePress's native Markdown hook:
 
-1. ALGOL, CPL, and BCPL
-2. B
-3. C
+```ts
+// docs/.vitepress/config.ts
+import { gentorialMarkdown } from '@gentorial/engine-vitepress'
+import { defineConfig } from 'vitepress'
 
-::: generate c-history kind=explanation
-Explain how this language lineage led to C and which key design influences each stage left behind.
-:::
+export default defineConfig({
+  title: 'My course',
+  srcDir: '../content',
+  markdown: {
+    math: true,
+    config: gentorialMarkdown
+  }
+})
 ```
 
-The compiler treats the author-written list as the section scope and attaches a low-interference liquid-orb trigger to the nearest heading. The orb communicates idle, generating, success, and failure states without adding a visible “Generate” label. Successful results expose regenerate, copy, feedback, and expand/collapse controls beside the heading.
+The default theme installs the Vue runtime and chooses between the deterministic generator and learner-enabled BYOK:
 
-The generated lesson appears directly in the document flow after the original text. Only its validated `GeneratedLesson` blocks are visible: the result itself has no repeated `✦`, “personalized explanation” label, marker, background, border, or visible loading/error text. Invisible ARIA state may remain for assistive technology. A first failed request leaves this location empty and the author text unchanged; fallback blocks remain available to custom integrations but are not part of the default unobtrusive UI. Regenerating replaces the main result instead of appending another copy. Learners choose `detail`, `tone`, and `narrative` globally, so those preferences shape the explanation without widening its author-defined scope.
+```ts
+// docs/.vitepress/theme/index.ts
+import { createMockGenerator } from '@gentorial/ai'
+import { createGentorialRuntime } from '@gentorial/runtime-vue'
+import { createGentorialTheme } from '@gentorial/theme-default'
+import '@gentorial/theme-default/style.css'
+import course from '../../../course.config.js'
 
-### Follow-up questions
+const generator = createMockGenerator()
+const runtime = createGentorialRuntime({
+  learnerProfile: {
+    detail: 'balanced',
+    tone: 'conversational',
+    narrative: 'direct'
+  },
+  generate: (request, context) => generator.generate({
+    course,
+    generate: request.generate,
+    concepts: request.concepts,
+    ...(request.learner ? { learner: request.learner } : {}),
+    ...(request.conversation ? { conversation: request.conversation } : {})
+  }, { signal: context.signal })
+})
 
-Follow-up capability remains bound to each generated lesson. Once a lesson is available, its end contains a persistent single-line input with the placeholder “Ask a follow-up…” and a Send button; learners do not have to discover an interaction by clicking tutorial text. Enter or Send submits, while Escape cancels an active request and clears the draft. The learner’s question and labels such as “You” or “Response” are never rendered. Each validated assistant `GeneratedLesson` is inserted above the composer as the next ordinary structured content block.
+export default createGentorialTheme({
+  enhanceApp({ app }) {
+    app.use(runtime)
+  }
+})
+```
 
-Every follow-up still inherits the same `SectionScope`, referenced concept anchors, course policies, learner profile, current explanation, and prior completed turns as internal context. It must ground itself in the same required `sourceIds` and `conceptIds`. Cancelled, failed, or superseded requests add no visible partial turn, and a successful main regeneration clears the conversation attached to the result it replaced.
+The scaffolded theme contains the complete import list, course configuration, and BYOK provider selection. The shortened example above highlights the runtime boundary.
+
+## AI and security model
+
+Gentorial treats generated output as untrusted structured data:
+
+1. The engine compiles the section scope, concept anchors, learner profile, and optional conversation.
+2. A provider-neutral generator returns a `GeneratedLesson` made from controlled block types.
+3. Schema and grounding checks run before the result reaches the UI.
+4. Vue components render those blocks directly; model output is not passed to `v-html`.
+
+BYOK is learner-controlled and opt-in. Keys entered in the default UI are kept only in the current page's memory and are sent directly to the selected provider. Do not embed an author's production key in a browser bundle; use a server-side or local relay for managed credentials.
 
 ## Packages
 
 | Package | Responsibility |
 | --- | --- |
-| `@gentorial/core` | Course definitions, schemas, controlled lesson blocks, diagnostics, and plugin contracts |
-| `@gentorial/content` | Pure Markdown directive parsing and Node.js course-directory compilation |
-| `@gentorial/ai` | Prompt compilation, provider/transport contracts, validation, and deterministic mocks |
-| `@gentorial/runtime-vue` | Request lifecycle and safe Vue rendering for registered lesson blocks |
-| `@gentorial/engine-vitepress` | VitePress configuration and Markdown container integration |
-| `@gentorial/theme-default` | Default component registration and accessible baseline styles |
-| `@gentorial/create` | Packaged project template and the future `npm create @gentorial` entry point |
-
-`examples/minimal` is the current vertical fixture. Its VitePress output contains the author-written `switch` concept anchor, a section-scoped “History of C” example, heading-attached generation triggers, document-native deterministic mock results, and a persistent follow-up composer with a send action.
-
-`apps/website` is the static Gentorial landing site. It uses React, Tailwind CSS, and Lucide with a monochrome visual system.
+| [`@gentorial/core`](./packages/core) | Course schemas, stable protocol types, and validation |
+| [`@gentorial/content`](./packages/content) | Markdown parsing and course-manifest compilation |
+| [`@gentorial/ai`](./packages/ai) | Prompt compilation, structured generation, grounding, mock, and BYOK adapters |
+| [`@gentorial/runtime-vue`](./packages/runtime-vue) | Vue runtime state, generation lifecycle, preferences, and rendering |
+| [`@gentorial/engine-vitepress`](./packages/engine-vitepress) | VitePress Markdown integration and directive transformation |
+| [`@gentorial/theme-default`](./packages/theme-default) | Default VitePress theme integration and styles |
+| [`@gentorial/create`](./packages/create) | Interactive project scaffolder and packaged starter template |
 
 ## Development
 
-Requirements:
-
-- Node.js `>=22.13.0`
-- pnpm `11.1.2`
+Gentorial is a pnpm workspace.
 
 ```bash
+git clone https://github.com/Minsecrus/gentorial.git
+cd gentorial
 pnpm install
 pnpm check
-pnpm dev
-pnpm dev:website
 ```
 
-`pnpm check` builds every package, the minimal VitePress site, and the static landing site; it also performs strict TypeScript checks and runs the protocol and integration tests.
-
-To exercise the local scaffolder:
+Useful commands:
 
 ```bash
-pnpm build
-node packages/create/dist/cli.js my-course --no-install
+pnpm dev          # run the minimal VitePress example
+pnpm dev:website  # run the project website
+pnpm build        # build all packages and applications
+pnpm typecheck    # type-check every workspace project
+pnpm test         # run the test suite
 ```
 
-The generated project intentionally starts without an AI key. The public workflow targeted for `0.1.0` is:
-
-```bash
-npm create @gentorial@latest my-course
-cd my-course
-npm run dev
-```
-
-The scaffolder detects npm, pnpm, Yarn, or Bun from the invoking command, asks only for missing course metadata, and can install dependencies and initialize Git. Use `--no-install --no-git` for deterministic CI scaffolding.
+CI runs the complete check and package dry-run matrix on Windows and Ubuntu with Node.js 22.13 and 24.
 
 ## Project status
 
-The repository currently includes the package foundations, a deterministic fallback pipeline, browser-direct OpenAI, Anthropic, Google, and OpenAI-compatible BYOK adapters, document-native explanation output, per-result follow-up input, global nav preferences, a VitePress vertical example, tests, Changesets configuration, and Windows/Ubuntu CI. Packages remain at `0.0.0`; the next milestones include full manifest consumption in the VitePress build, a production relay path, audited snapshots, and the complete scaffolder and publishing flow.
+Gentorial `0.1.x` is the first public framework release. The core authoring, generation, preference, BYOK, VitePress, and scaffolding paths are usable, but APIs may still change before `1.0`. Production deployments should review their provider transport, privacy requirements, content policies, and generated-output evaluation strategy.
 
-See [PLAN.md](./PLAN.md) for architecture decisions, security constraints, milestones, and the `0.1.0` completion definition.
+See [PLAN.md](./PLAN.md) for architecture decisions and upcoming work.
+
+## Contributing
+
+Issues and focused pull requests are welcome. For behavioral changes, include tests and run `pnpm check` before submitting.
 
 ## License
 
-Gentorial is available under the [MIT License](./LICENSE).
+[MIT](./LICENSE) © 2026 Minsecrus

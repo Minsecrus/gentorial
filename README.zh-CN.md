@@ -1,128 +1,226 @@
-# Gentorial（衍课）
+# Gentorial
 
-> 用教学规范生成每个人自己的教程。
+> 作者定义知识，学习者塑造教程。
 
-简体中文 · [English](./README.md)
+[![CI](https://github.com/Minsecrus/gentorial/actions/workflows/ci.yml/badge.svg)](https://github.com/Minsecrus/gentorial/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@gentorial/create?label=%40gentorial%2Fcreate)](https://www.npmjs.com/package/@gentorial/create)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.13-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License](https://img.shields.io/badge/license-MIT-black.svg)](./LICENSE)
 
-Gentorial 是一个面向生成式教程的开源框架。作者明确写下不能漂移的概念、边界与准确性要求，再用简短的局部提示描述希望生成的讲解、示例、比较、练习或反馈。Gentorial 负责组合上下文、调用可替换的生成器、校验结构化结果，并且只渲染已经登记的课程块。
+[English](./README.md)
 
-项目正在开发 `0.1.0`。工作区内所有包目前仍为 `0.0.0`，尚未发布任何 npm 包。
+Gentorial 是一个以 VitePress 为基础的生成式教程框架。作者负责定义长期有效的事实、章节范围与准确性规则；学习者可以选择适合自己的详略程度、语气、叙事方式和示例类型。
 
-## 为什么做 Gentorial？
+作者原文始终可直接阅读。AI 只是挂载在文档明确位置上的可选讲解层，不会替代教程正文。
 
-- **概念始终明文存在。** 作者写下的概念锚点会进入静态 HTML，生成内容不能将其替换。
-- **生成结果受到约束。** 模型必须返回 `GeneratedLesson` 协议；任意 HTML、脚本和 Vue 模板会被拒绝。
-- **失败时仍然是一份教程。** 默认界面会让失败的结果位置保持为空，并保留作者原文；自定义集成仍可选择显示回退块。
-- **提供方与页面引擎可以替换。** 课程协议不依赖模型 SDK、Vue、VitePress、Nuxt 或文件系统。
-- **BYOK 必须由学习者明确启用，且只存在于会话内存。** 作者密钥仍应存在于构建进程、本地中继或受控服务端。学习者可以主动选择浏览器直连；默认主题不会把密钥写入静态产物或浏览器持久存储。
+## 为什么需要 Gentorial
 
-## 内容写法
+传统文档为所有人提供同一套解释；通用聊天虽然能调整表达，却容易脱离作者原本的教学范围和事实来源。Gentorial 将两种责任明确分开：
+
+- **作者定义课程。** 概念锚点、正文范围、生成提示和准确性策略都保存在可版本控制的文件中。
+- **学习者调整表达。** 全局偏好只改变详略、语气、叙事和示例，不反转作者写明的结论。
+- **生成内容留在文档中。** 讲解出现在对应正文之后，可就地重新生成、复制、折叠和继续追问。
+- **AI 始终可选。** 没有密钥时使用确定性 mock；学习者也可以主动开启受支持提供方的 BYOK。
+
+## 核心能力
+
+- 使用原生 VitePress 配置，不引入第二套站点配置抽象。
+- 通过带稳定 ID 和章节范围的 `concept`、`generate` Markdown 容器编写教程。
+- 生成结果先经过结构与 grounding 校验，再进入页面渲染。
+- Vue 3 运行时内置取消请求、过期响应保护、重新生成和连续追问。
+- 全局学习偏好可作用于不同生成章节。
+- 支持 OpenAI、Anthropic、Google 和 OpenAI-compatible 浏览器 BYOK。
+- 学习者密钥默认只保存在当前页面的内存中。
+- 默认启用 VitePress MathJax LaTeX 与懒加载 Mermaid。
+- 交互式脚手架支持 npm、pnpm、Yarn 和 Bun。
+- 默认主题不通过 `v-html` 渲染模型输出。
+
+## 快速开始
+
+环境要求：
+
+- Node.js `>=22.13.0`
+- npm、pnpm、Yarn 2+ 或 Bun 之一
+
+使用你偏好的包管理器创建项目：
+
+```bash
+# npm
+npm create @gentorial@latest my-course
+
+# pnpm
+pnpm create @gentorial@latest my-course
+
+# Yarn 2+
+yarn dlx -p @gentorial/create@latest create-gentorial my-course
+
+# Bun
+bunx -p @gentorial/create@latest create-gentorial my-course
+```
+
+脚手架会询问缺失的课程信息，识别当前包管理器，并让你选择是否安装依赖和初始化 Git。随后按脚手架打印的命令启动站点，例如：
+
+```bash
+cd my-course
+pnpm dev
+```
+
+新项目无需 API 密钥即可打开。学习者明确配置 BYOK 之前，页面使用确定性生成器。
+
+## 生成的项目结构
+
+```text
+my-course/
+├─ content/
+│  └─ index.md
+├─ docs/
+│  └─ .vitepress/
+│     ├─ config.ts
+│     └─ theme/
+│        └─ index.ts
+├─ course.config.ts
+├─ package.json
+├─ README.md
+└─ tsconfig.json
+```
+
+- `content/` 保存作者编写的教程正文。
+- `docs/.vitepress/config.ts` 是标准 VitePress 配置。
+- `docs/.vitepress/theme/index.ts` 连接 Gentorial 运行时与生成器。
+- `course.config.ts` 定义稳定的课程元数据、生成模式、语言和准确性策略。
+
+## 编写教程
+
+权威内容仍然使用普通 Markdown。对于生成讲解必须保留的结论，使用 `concept`；在适合个性化讲解的章节中，再添加 `generate`：
 
 ```md
-::: concept switch-discrete title="switch 的适用边界"
-`switch` 根据整数类型表达式经整数提升后的离散结果选择分支。
+## 什么时候使用 `switch`
+
+::: concept switch-discrete title="离散分支"
+`switch` 根据整数表达式的离散结果选择分支。
 :::
 
-## 连续范围
-
-成绩区间描述的是范围，而不是一个个离散值。
+范围判断描述的是连续区间，因此通常使用 `if` 链更清晰。
 
 ::: generate switch-range kind=example concepts=switch-discrete
-说明 switch 为什么不适合直接判断成绩区间等连续范围。
-:::
-
-## 相似分支
-
-当多个分支只有数据不同，重复写法可能掩盖真正的数据结构。
-
-::: generate switch-table kind=example concepts=switch-discrete
-说明相似分支在什么情况下可以改用表驱动。
+解释为什么 `switch` 不适合直接处理成绩区间，再给出一个简洁替代方案。
 :::
 ```
 
-`concept` 正文属于课程规范，也属于静态页面。`generate` 正文只表达局部教学意图；课程级策略、概念原文、学习者偏好与输出协议由框架统一补入。
+`generate` 会取得当前章节作为来源范围，并显式引用所需的概念锚点。生成结果插入作者正文之后，不会覆盖原文。
 
-### 从作者章节生成
+目前支持 `explanation`、`example`、`comparison`、`exercise` 和 `feedback` 五种生成类型。
 
-普通章节本身也可以限定内容范围，不一定要另外声明概念锚点：
+## 接入 VitePress
 
-```md
-## C 的历史
+Gentorial 直接使用 VitePress 原生 Markdown 钩子：
 
-1. ALGOL、CPL、BCPL
-2. B
-3. C
+```ts
+// docs/.vitepress/config.ts
+import { gentorialMarkdown } from '@gentorial/engine-vitepress'
+import { defineConfig } from 'vitepress'
 
-::: generate c-history kind=explanation
-沿这条语言演化链解释 C 的形成过程，以及各阶段留下的关键设计影响。
-:::
+export default defineConfig({
+  title: 'My course',
+  srcDir: '../content',
+  markdown: {
+    math: true,
+    config: gentorialMarkdown
+  }
+})
 ```
 
-编译器会把作者写下的列表作为章节范围，并在最近的标题旁挂载低干扰液态小球入口。小球通过颜色和转速表达未生成、生成中、成功与失败，不显示“生成”等可见文字；成功后在标题旁提供重新生成、复制、反馈与展开/收起操作。
+默认主题负责安装 Vue 运行时，并在确定性生成器与学习者启用的 BYOK 之间进行选择：
 
-生成结果默认在原文之后直接进入正文流，只显示已经校验的 `GeneratedLesson` 内容本身。结果中不重复显示 `✦`，也没有“个性化讲解”等标签、标记、背景、边框或可见的加载/错误状态文字；可为辅助技术保留不可见的 ARIA 状态。首次请求失败时，该位置保持为空，作者原文不变；回退块能力仍供自定义集成选择，但不属于默认无感界面。重新生成只替换主结果，而不会不断追加。学习者通过全局 `detail`、`tone` 和 `narrative` 偏好控制讲解的详略、语气与叙事方式，这些偏好不会扩大作者限定的内容范围。
+```ts
+// docs/.vitepress/theme/index.ts
+import { createMockGenerator } from '@gentorial/ai'
+import { createGentorialRuntime } from '@gentorial/runtime-vue'
+import { createGentorialTheme } from '@gentorial/theme-default'
+import '@gentorial/theme-default/style.css'
+import course from '../../../course.config.js'
 
-### 继续追问
+const generator = createMockGenerator()
+const runtime = createGentorialRuntime({
+  learnerProfile: {
+    detail: 'balanced',
+    tone: 'conversational',
+    narrative: 'direct'
+  },
+  generate: (request, context) => generator.generate({
+    course,
+    generate: request.generate,
+    concepts: request.concepts,
+    ...(request.learner ? { learner: request.learner } : {}),
+    ...(request.conversation ? { conversation: request.conversation } : {})
+  }, { signal: context.signal })
+})
 
-追问能力仍绑定在每份生成讲解上。讲解出现后，末尾常驻一个带“继续追问…” placeholder 的单行输入框和“发送”按钮，不要求学习者通过点击教程正文来发现入口。Enter 或“发送”提交，Esc 取消活动请求并清空草稿。界面不显示学习者的问题，也不显示“你”“回应”等角色标签；每个通过校验的 assistant `GeneratedLesson` 作为下一段普通结构化内容插在输入框上方。
+export default createGentorialTheme({
+  enhanceApp({ app }) {
+    app.use(runtime)
+  }
+})
+```
 
-每次追问仍在内部继承同一个 `SectionScope`、引用的概念锚点、课程策略、learner profile、当前主讲解和此前已完成轮次，并继续声明相同要求下的 `sourceIds` 与 `conceptIds`。取消、失败或被新请求替代的追问不会留下可见的残缺轮次；重新展开主讲解成功后，运行时会清空绑定在旧结果上的对话。
+脚手架生成的主题文件已经包含完整 import、课程配置和 BYOK 提供方选择。上面的缩略示例只用于说明运行时边界。
+
+## AI 与安全边界
+
+Gentorial 将模型输出视为不可信的结构化数据：
+
+1. 引擎汇总当前章节、概念锚点、学习者偏好和可选对话。
+2. 提供方无关的生成器返回由受控 block 构成的 `GeneratedLesson`。
+3. 结果进入 UI 前必须通过 schema 与 grounding 校验。
+4. Vue 组件直接渲染这些 block，不把模型文本交给 `v-html`。
+
+BYOK 完全由学习者主动开启。默认界面输入的密钥只保存在当前页面内存中，并直接发送给所选提供方。不要把课程作者的生产密钥写入浏览器 bundle；托管凭据应放在服务端或本地中继中。
 
 ## 包结构
 
 | 包 | 职责 |
 | --- | --- |
-| `@gentorial/core` | 课程定义、协议、受控课程块、诊断与插件契约 |
-| `@gentorial/content` | 纯 Markdown 指令解析与 Node.js 课程目录编译 |
-| `@gentorial/ai` | 提示编译、提供方/传输契约、结果校验与确定性 mock |
-| `@gentorial/runtime-vue` | 请求生命周期与受控课程块的安全 Vue 渲染 |
-| `@gentorial/engine-vitepress` | VitePress 配置和 Markdown 容器接入 |
-| `@gentorial/theme-default` | 默认组件注册与无障碍基础样式 |
-| `@gentorial/create` | 随包发布的项目模板与未来的 `npm create @gentorial` 入口 |
-
-`examples/minimal` 是当前纵向贯通示例。其 VitePress 静态产物包含作者写明的 `switch` 概念锚点、以章节为范围的“C 的历史”示例、标题旁生成触发器、融入正文的确定性 mock 结果，以及结果末尾的常驻追问输入与发送按钮。
-
-`apps/website` 是 Gentorial 的静态官网，使用 React、Tailwind CSS 与 Lucide，并采用 monochrome 视觉系统。
+| [`@gentorial/core`](./packages/core) | 课程 schema、稳定协议类型与校验 |
+| [`@gentorial/content`](./packages/content) | Markdown 解析与课程 manifest 编译 |
+| [`@gentorial/ai`](./packages/ai) | 提示编译、结构化生成、grounding、mock 与 BYOK 适配器 |
+| [`@gentorial/runtime-vue`](./packages/runtime-vue) | Vue 状态、生成生命周期、偏好与安全渲染 |
+| [`@gentorial/engine-vitepress`](./packages/engine-vitepress) | VitePress Markdown 接入与指令转换 |
+| [`@gentorial/theme-default`](./packages/theme-default) | 默认 VitePress 主题接入与样式 |
+| [`@gentorial/create`](./packages/create) | 交互式脚手架与随包发布的项目模板 |
 
 ## 本地开发
 
-环境要求：
-
-- Node.js `>=22.13.0`
-- pnpm `11.1.2`
+Gentorial 使用 pnpm workspace：
 
 ```bash
+git clone https://github.com/Minsecrus/gentorial.git
+cd gentorial
 pnpm install
 pnpm check
-pnpm dev
-pnpm dev:website
 ```
 
-`pnpm check` 会构建所有包、最小 VitePress 示例与静态官网，执行严格 TypeScript 检查，并运行协议与集成测试。
-
-在仓库内试用脚手架：
+常用命令：
 
 ```bash
-pnpm build
-node packages/create/dist/cli.js my-course --no-install
+pnpm dev          # 启动最小 VitePress 示例
+pnpm dev:website  # 启动项目官网
+pnpm build        # 构建所有包和应用
+pnpm typecheck    # 检查所有 workspace 项目的类型
+pnpm test         # 运行测试
 ```
 
-生成的项目默认不需要 AI 密钥。`0.1.0` 计划提供的公开流程是：
+CI 会在 Windows、Ubuntu 以及 Node.js 22.13、24 的矩阵中执行完整检查和 npm 包 dry-run。
 
-```bash
-npm create @gentorial@latest my-course
-cd my-course
-npm run dev
-```
+## 项目状态
 
-脚手架会从启动命令自动识别 npm、pnpm、Yarn 或 Bun，只询问缺失的课程信息，并可自动安装依赖和初始化 Git。CI 中可使用 `--no-install --no-git` 获得无副作用的确定性创建流程。
+Gentorial `0.1.x` 是首个公开框架版本。作者编写、生成管线、全局偏好、BYOK、VitePress 和脚手架链路已经可用，但 `1.0` 前 API 仍可能调整。生产部署需要自行审核模型传输、隐私要求、内容策略和生成结果评估方案。
 
-## 当前状态
+架构决策与后续计划见 [PLAN.md](./PLAN.md)。
 
-仓库目前已经具备各包基础实现、确定性回退管线、OpenAI、Anthropic、Google 与 OpenAI-compatible 的浏览器 BYOK 适配器、融入正文的输出、常驻追问输入、导航栏全局偏好、VitePress 纵向示例、测试、Changesets 配置，以及 Windows/Ubuntu CI。所有包仍为 `0.0.0`；下一阶段将完成 VitePress 对完整课程清单的消费、生产级中继、可审核快照和完整脚手架发布流程。
+## 参与贡献
 
-架构决策、安全边界、实施阶段与 `0.1.0` 完成定义见 [PLAN.md](./PLAN.md)。
+欢迎提交 Issue 和范围明确的 Pull Request。行为变更应附带测试，并在提交前运行 `pnpm check`。
 
 ## 许可证
 
-Gentorial 使用 [MIT License](./LICENSE)。
+[MIT](./LICENSE) © 2026 Minsecrus

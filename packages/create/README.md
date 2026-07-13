@@ -1,9 +1,19 @@
 # `@gentorial/create`
 
-Gentorial 项目脚手架，对应：
+Gentorial 项目脚手架，可通过以下任一方式启动：
 
 ```bash
+# npm
 npm create @gentorial@latest my-course
+
+# pnpm
+pnpm create @gentorial@latest my-course
+
+# Yarn 2+
+yarn dlx -p @gentorial/create@latest create-gentorial my-course
+
+# Bun
+bunx -p @gentorial/create@latest create-gentorial my-course
 ```
 
 模板随 npm tarball 发布，不依赖远程仓库。目标目录非空时默认拒绝写入；创建后的项目无需模型密钥即可阅读静态内容，并通过确定性 mock 演示标题旁的按需讲解、无开发标记的正文直出、全局表达偏好，以及结果末尾带 placeholder 和发送按钮的追问输入。
