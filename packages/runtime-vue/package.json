@@ -1,6 +1,6 @@
 {
   "name": "@gentorial/runtime-vue",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Vue runtime and safe lesson-block rendering for Gentorial.",
   "type": "module",
   "sideEffects": false,

@@ -1,9 +1,8 @@
 import type { GeneratedLesson, LessonBlock } from '@gentorial/core'
-import { assertGeneratedLesson } from './validation.js'
 import type { GenerationInput, Generator } from './types.js'
 
 export type MockGeneratorOptions = {
-  transform?: (lesson: GeneratedLesson, input: GenerationInput) => unknown
+  transform?: (lesson: GeneratedLesson, input: GenerationInput) => GeneratedLesson
 }
 
 function plainFragment(value: string): string {
@@ -92,8 +91,7 @@ export function createMockGenerator(options: MockGeneratorOptions = {}): Generat
           sourceIds: [input.generate.scope.id]
         }
       }
-      const value = options.transform ? options.transform(lesson, input) : lesson
-      return assertGeneratedLesson(value, input)
+      return options.transform ? options.transform(lesson, input) : lesson
     }
   }
 }

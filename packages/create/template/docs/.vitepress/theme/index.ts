@@ -29,7 +29,8 @@ const runtime = createGentorialRuntime({
           provider: context.byok.provider as BrowserByokProvider
         })
       : generator
-    return activeGenerator.generate(input, { signal: context.signal })
+    return activeGenerator.stream?.(input, { signal: context.signal })
+      ?? activeGenerator.generate(input, { signal: context.signal })
   }
 })
 

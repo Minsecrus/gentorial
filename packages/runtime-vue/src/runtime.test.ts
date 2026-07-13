@@ -54,6 +54,35 @@ function deferred<T>() {
 }
 
 describe('createGentorialRuntime', () => {
+  it('renders streamed text incrementally and commits it as a lesson', async () => {
+    const gate = deferred<void>()
+    const runtime = createGentorialRuntime({
+      generate() {
+        return (async function* () {
+          yield '第一段'
+          await gate.promise
+          yield '，第二段'
+        })()
+      }
+    })
+    runtime.register({ generate: spec, concepts: [concept] })
+
+    const running = runtime.run(spec.id)
+    await vi.waitFor(() => {
+      expect(runtime.getState(spec.id)).toMatchObject({
+        status: 'loading',
+        blocks: [{ type: 'paragraph', text: '第一段' }]
+      })
+    })
+
+    gate.resolve()
+    await running
+    expect(runtime.getState(spec.id)).toMatchObject({
+      status: 'success',
+      blocks: [{ type: 'paragraph', text: '第一段，第二段' }]
+    })
+  })
+
   it('registers a region and runs it with the current global learner profile', async () => {
     const generate = vi.fn().mockResolvedValue(lesson('mock'))
     const runtime = createGentorialRuntime({

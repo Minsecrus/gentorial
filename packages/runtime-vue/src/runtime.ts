@@ -32,6 +32,8 @@ export type GentorialByokSession = {
   provider: string
   apiKey: string
   model?: string
+  baseUrl?: string
+  /** @deprecated Use baseUrl. */
   endpoint?: string
 }
 
@@ -51,6 +53,7 @@ export type GentorialGenerationState = {
   readonly conversation: readonly LessonConversationTurn[]
   readonly followUpStatus: GentorialFollowUpStatus
   readonly followUpError: string | undefined
+  readonly streamingFollowUpBlocks: readonly LessonBlock[]
   readonly expanded: boolean
 }
 
@@ -60,7 +63,7 @@ export type GentorialRuntimeOptions = {
   generate(
     request: RuntimeGenerationRequest,
     context: RuntimeGenerationContext
-  ): Promise<GeneratedLesson>
+  ): GeneratedLesson | AsyncIterable<string> | Promise<GeneratedLesson | AsyncIterable<string>>
 }
 
 export type GentorialRuntime = Plugin & {
@@ -87,6 +90,7 @@ type MutableGenerationState = {
   conversation: LessonConversationTurn[]
   followUpStatus: GentorialFollowUpStatus
   followUpError: string | undefined
+  streamingFollowUpBlocks: LessonBlock[]
   expanded: boolean
   baseLesson: GeneratedLesson | undefined
 }
@@ -99,6 +103,8 @@ type ActiveRegistration = {
 type ActiveRequest = {
   controller: AbortController
   sequence: number
+  previousBlocks?: LessonBlock[]
+  previousExpanded?: boolean
 }
 
 const defaultLearnerProfile: LearnerProfile = {
@@ -119,6 +125,7 @@ function createState(id: string): MutableGenerationState {
     conversation: [],
     followUpStatus: 'idle' as const,
     followUpError: undefined,
+    streamingFollowUpBlocks: [],
     expanded: false,
     baseLesson: undefined
   })
@@ -126,6 +133,34 @@ function createState(id: string): MutableGenerationState {
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+function isAsyncIterable(value: unknown): value is AsyncIterable<string> {
+  return value !== null
+    && typeof value === 'object'
+    && Symbol.asyncIterator in value
+}
+
+async function receiveStream(
+  value: AsyncIterable<string>,
+  request: RuntimeGenerationRequest,
+  onText: (text: string) => void
+): Promise<GeneratedLesson> {
+  let text = ''
+  for await (const chunk of value) {
+    text += chunk
+    onText(text)
+  }
+  if (!text) throw new Error('提供方返回了空响应流')
+
+  return {
+    schemaVersion: '1',
+    blocks: [{ type: 'paragraph', text }],
+    grounding: {
+      conceptIds: [...request.generate.concepts],
+      sourceIds: [request.generate.scope.id]
+    }
+  }
 }
 
 export function createGentorialRuntime(options: GentorialRuntimeOptions): GentorialRuntime {
@@ -180,6 +215,8 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     active.controller.abort()
 
     const state = mutableState(id)
+    if (active.previousBlocks) state.blocks = active.previousBlocks
+    if (active.previousExpanded !== undefined) state.expanded = active.previousExpanded
     state.error = undefined
     state.status = state.blocks.length > 0 ? 'success' : 'idle'
   }
@@ -195,6 +232,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     const state = mutableState(id)
     state.followUpStatus = 'idle'
     state.followUpError = undefined
+    state.streamingFollowUpBlocks = []
   }
 
   async function run(id: string): Promise<void> {
@@ -210,7 +248,12 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     cancel(id)
     const sequence = nextSequence(id)
     const controller = new AbortController()
-    requests.set(id, { controller, sequence })
+    requests.set(id, {
+      controller,
+      sequence,
+      previousBlocks: [...state.blocks],
+      previousExpanded: state.expanded
+    })
     state.status = 'loading'
     state.error = undefined
 
@@ -222,7 +265,16 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     }
 
     try {
-      const lesson = await options.generate(request, generationContext(controller.signal))
+      const output = options.generate(request, generationContext(controller.signal))
+      const value = isAsyncIterable(output) ? output : await output
+      const lesson = isAsyncIterable(value)
+        ? await receiveStream(value, request, (text) => {
+          const active = requests.get(id)
+          if (!active || active.sequence !== sequence || controller.signal.aborted) return
+          state.blocks = [{ type: 'paragraph', text }]
+          state.expanded = true
+        })
+        : value
       const active = requests.get(id)
       if (!active || active.sequence !== sequence || controller.signal.aborted) return
 
@@ -233,6 +285,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
       state.conversation = []
       state.followUpStatus = 'idle'
       state.followUpError = undefined
+      state.streamingFollowUpBlocks = []
       state.status = 'success'
       state.expanded = true
     } catch (error) {
@@ -245,6 +298,8 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
         return
       }
 
+      if (active.previousBlocks) state.blocks = active.previousBlocks
+      if (active.previousExpanded !== undefined) state.expanded = active.previousExpanded
       state.error = errorMessage(error)
       state.status = 'error'
     }
@@ -270,6 +325,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     followUpRequests.set(id, { controller, sequence })
     state.followUpStatus = 'loading'
     state.followUpError = undefined
+    state.streamingFollowUpBlocks = []
 
     const selectedLearner = registration.learner ?? learnerProfile.value
     const request: RuntimeGenerationRequest = {
@@ -280,7 +336,15 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
     }
 
     try {
-      const lesson = await options.generate(request, generationContext(controller.signal))
+      const output = options.generate(request, generationContext(controller.signal))
+      const value = isAsyncIterable(output) ? output : await output
+      const lesson = isAsyncIterable(value)
+        ? await receiveStream(value, request, (text) => {
+          const active = followUpRequests.get(id)
+          if (!active || active.sequence !== sequence || controller.signal.aborted) return
+          state.streamingFollowUpBlocks = [{ type: 'paragraph', text }]
+        })
+        : value
       const active = followUpRequests.get(id)
       if (!active || active.sequence !== sequence || controller.signal.aborted) return
 
@@ -290,6 +354,7 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
         userTurn,
         { role: 'assistant', lesson }
       ]
+      state.streamingFollowUpBlocks = []
       state.followUpStatus = 'idle'
     } catch (error) {
       const active = followUpRequests.get(id)
@@ -297,12 +362,14 @@ export function createGentorialRuntime(options: GentorialRuntimeOptions): Gentor
 
       followUpRequests.delete(id)
       if (controller.signal.aborted) {
+        state.streamingFollowUpBlocks = []
         state.followUpStatus = 'idle'
         return
       }
 
       state.followUpStatus = 'error'
       state.followUpError = errorMessage(error)
+      state.streamingFollowUpBlocks = []
     }
   }
 

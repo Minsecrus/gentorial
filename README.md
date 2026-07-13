@@ -26,10 +26,10 @@ Conventional documentation gives every learner the same explanation. General-pur
 
 - Native VitePress configuration—no parallel site-config abstraction.
 - `concept` and `generate` Markdown containers with stable IDs and section scope.
-- Structured generated lessons validated before rendering.
+- Structured lessons and streamed text rendered through controlled Vue components.
 - Vue 3 runtime with cancellation, stale-request protection, regeneration, and follow-up questions.
 - Global learner preferences shared across generated sections.
-- Browser BYOK adapters for OpenAI, Anthropic, Google, and OpenAI-compatible endpoints.
+- Browser BYOK adapters for OpenAI, Anthropic, Google, and OpenAI-compatible endpoints, with configurable model and Base URL.
 - Memory-only handling of learner API keys.
 - LaTeX through VitePress MathJax support and lazy Mermaid rendering.
 - Interactive scaffolder with npm, pnpm, Yarn, and Bun support.
@@ -167,12 +167,13 @@ The scaffolded theme contains the complete import list, course configuration, an
 
 ## AI and security model
 
-Gentorial treats generated output as untrusted structured data:
+Gentorial treats generated output as untrusted data:
 
 1. The engine compiles the section scope, concept anchors, learner profile, and optional conversation.
-2. A provider-neutral generator returns a `GeneratedLesson` made from controlled block types.
-3. Schema and grounding checks run before the result reaches the UI.
-4. Vue components render those blocks directly; model output is not passed to `v-html`.
+2. A provider-neutral generator returns a `GeneratedLesson` or a plain-text stream.
+3. Vue components render controlled blocks directly; model output is not passed to `v-html`.
+
+Gentorial does not judge whether generated content is correct and does not expose a content-validation hook. Accuracy policies and grounding are prompt context owned by the course author, not an enforcement layer in the framework.
 
 BYOK is learner-controlled and opt-in. Keys entered in the default UI are kept only in the current page's memory and are sent directly to the selected provider. Do not embed an author's production key in a browser bundle; use a server-side or local relay for managed credentials.
 
@@ -182,7 +183,7 @@ BYOK is learner-controlled and opt-in. Keys entered in the default UI are kept o
 | --- | --- |
 | [`@gentorial/core`](./packages/core) | Course schemas, stable protocol types, and validation |
 | [`@gentorial/content`](./packages/content) | Markdown parsing and course-manifest compilation |
-| [`@gentorial/ai`](./packages/ai) | Prompt compilation, structured generation, grounding, mock, and BYOK adapters |
+| [`@gentorial/ai`](./packages/ai) | Prompt compilation, structured and streaming generation, mock, and BYOK adapters |
 | [`@gentorial/runtime-vue`](./packages/runtime-vue) | Vue runtime state, generation lifecycle, preferences, and rendering |
 | [`@gentorial/engine-vitepress`](./packages/engine-vitepress) | VitePress Markdown integration and directive transformation |
 | [`@gentorial/theme-default`](./packages/theme-default) | Default VitePress theme integration and styles |

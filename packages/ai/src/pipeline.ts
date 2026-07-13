@@ -1,5 +1,5 @@
 import { defaultPromptCompiler } from './prompt.js'
-import { assertGeneratedLesson } from './validation.js'
+import type { GeneratedLesson } from '@gentorial/core'
 import type {
   GenerationPipelineOptions,
   Generator
@@ -18,8 +18,7 @@ export function createGenerationPipeline<TRequest, TResponse>(
         ...context,
         providerId: options.adapter.id
       })
-      const value = options.adapter.readStructuredResult(response)
-      return assertGeneratedLesson(value, input)
+      return options.adapter.readStructuredResult(response) as GeneratedLesson
     }
   }
 }

@@ -4,8 +4,7 @@ import type {
   GeneratedLesson,
   GenerateSpec,
   LearnerProfile,
-  LessonConversationTurn,
-  ValidationDiagnostic
+  LessonConversationTurn
 } from '@gentorial/core'
 
 export type LearnerPreferences = LearnerProfile
@@ -30,6 +29,7 @@ export type GenerationContext = {
 
 export interface Generator {
   generate(input: GenerationInput, context?: GenerationContext): Promise<GeneratedLesson>
+  stream?(input: GenerationInput, context?: GenerationContext): AsyncIterable<string>
 }
 
 export interface PromptCompiler {
@@ -55,7 +55,3 @@ export type GenerationPipelineOptions<TRequest, TResponse> = {
   adapter: ProviderAdapter<TRequest, TResponse>
   transport: AITransport<TRequest, TResponse>
 }
-
-export type GenerationValidationResult =
-  | { success: true; lesson: GeneratedLesson; diagnostics: [] }
-  | { success: false; diagnostics: ValidationDiagnostic[] }

@@ -235,7 +235,9 @@ export default function App() {
   })
   const [tutorialByok, setTutorialByok] = useState<TutorialByok>({
     provider: 'openai',
-    apiKey: ''
+    apiKey: '',
+    model: 'gpt-5.6-terra',
+    baseUrl: 'https://api.openai.com/v1'
   })
   const [readPreferencesOpen, setReadPreferencesOpen] = useState(false)
   const [readPreferencesView, setReadPreferencesView] = useState<'preferences' | 'byok'>('preferences')
@@ -427,7 +429,7 @@ export default function App() {
             id="top"
             className={`${journeyView === 'preferences' || journeyView === 'byok'
               ? 'hero-grid flex min-h-svh items-start justify-center overflow-visible px-5 pb-12 pt-24 sm:pt-28'
-              : 'hero-grid flex min-h-svh items-center justify-center overflow-hidden px-5 py-10'}`}
+              : `hero-grid hero-stage-centered${titleSeparated ? ' hero-stage-short-safe' : ''} flex min-h-svh items-center justify-center overflow-hidden px-5 py-10`}`}
           >
           <motion.div
             layout="position"
@@ -437,8 +439,8 @@ export default function App() {
             <motion.div
               layout
               className={titleSeparated
-                ? 'flex min-h-[13rem] flex-col items-center justify-center sm:min-h-[clamp(8rem,15vw,11rem)]'
-                : 'flex min-h-[8rem] flex-col items-center justify-center sm:min-h-[clamp(8rem,15vw,11rem)]'}
+                ? 'relative z-10 flex min-h-[13rem] flex-col items-center justify-center sm:min-h-[clamp(8rem,15vw,11rem)]'
+                : 'relative z-10 flex min-h-[8rem] flex-col items-center justify-center sm:min-h-[clamp(8rem,15vw,11rem)]'}
               transition={{ layout: { type: 'spring', stiffness: 110, damping: 20 } }}
             >
               <h1 className="sr-only">

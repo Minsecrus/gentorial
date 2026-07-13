@@ -11,8 +11,17 @@ export type TutorialPreferences = {
 }
 
 export type TutorialByok = {
-  provider: string
+  provider: 'openai' | 'anthropic' | 'google' | 'custom'
   apiKey: string
+  model: string
+  baseUrl: string
+}
+
+const byokProviderDefaults: Record<TutorialByok['provider'], { model: string; baseUrl: string }> = {
+  openai: { model: 'gpt-5.6-terra', baseUrl: 'https://api.openai.com/v1' },
+  anthropic: { model: 'claude-sonnet-5', baseUrl: 'https://api.anthropic.com/v1' },
+  google: { model: 'gemini-3.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta' },
+  custom: { model: '', baseUrl: '' }
 }
 
 type HeroJourneyProps = {
@@ -508,19 +517,33 @@ export function HeroJourney({
               </span>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-[0.75fr_1.25fr]">
+            <div className="grid gap-5 sm:grid-cols-2">
               <label className="grid gap-2 text-xs font-medium text-black/55">
                 Provider
                 <select
                   className="h-12 rounded-lg border border-black/12 bg-white px-3 text-sm font-normal text-black outline-none transition-colors focus:border-black/45"
                   value={byok.provider}
-                  onChange={(event) => onByokChange({ ...byok, provider: event.currentTarget.value })}
+                  onChange={(event) => {
+                    const provider = event.currentTarget.value as TutorialByok['provider']
+                    onByokChange({ ...byok, provider, ...byokProviderDefaults[provider] })
+                  }}
                 >
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
                   <option value="google">Google</option>
                   <option value="custom">OpenAI-compatible</option>
                 </select>
+              </label>
+              <label className="grid gap-2 text-xs font-medium text-black/55">
+                Model
+                <input
+                  className="h-12 rounded-lg border border-black/12 bg-white px-3 font-mono text-sm font-normal text-black outline-none transition-colors placeholder:text-black/25 focus:border-black/45"
+                  type="text"
+                  value={byok.model}
+                  spellCheck={false}
+                  placeholder={byok.provider === 'custom' ? 'Required, for example llama3.2' : byokProviderDefaults[byok.provider].model}
+                  onChange={(event) => onByokChange({ ...byok, model: event.currentTarget.value })}
+                />
               </label>
               <label className="grid gap-2 text-xs font-medium text-black/55">
                 API key
@@ -532,6 +555,17 @@ export function HeroJourney({
                   spellCheck={false}
                   placeholder="Stored in memory for this session only"
                   onChange={(event) => onByokChange({ ...byok, apiKey: event.currentTarget.value })}
+                />
+              </label>
+              <label className="grid gap-2 text-xs font-medium text-black/55">
+                Base URL
+                <input
+                  className="h-12 rounded-lg border border-black/12 bg-white px-3 font-mono text-sm font-normal text-black outline-none transition-colors placeholder:text-black/25 focus:border-black/45"
+                  type="url"
+                  value={byok.baseUrl}
+                  spellCheck={false}
+                  placeholder={byokProviderDefaults[byok.provider].baseUrl || 'https://example.com/v1'}
+                  onChange={(event) => onByokChange({ ...byok, baseUrl: event.currentTarget.value })}
                 />
               </label>
             </div>
@@ -551,7 +585,7 @@ export function HeroJourney({
               <button
                 className="inline-flex h-12 min-w-40 items-center justify-center gap-3 rounded-full bg-black px-6 text-sm font-medium text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-20"
                 type="submit"
-                disabled={!byok.apiKey.trim()}
+                disabled={!byok.apiKey.trim() || (byok.provider === 'custom' && (!byok.model.trim() || !byok.baseUrl.trim()))}
               >
                 Save & continue
                 <ArrowRight className="size-4" strokeWidth={1.8} aria-hidden="true" />

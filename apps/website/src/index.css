@@ -4,7 +4,7 @@
   --color-gentorial-blue: #3437e6;
   --color-gentorial-magenta: #d9166f;
   --font-sans: "Geist Variable", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-  --font-mono: "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+  --font-mono: "Monaspace Neon", "SFMono-Regular", "Cascadia Code", "Roboto Mono", Consolas, monospace;
 }
 
 @property --mini-orb-dominant {
@@ -277,6 +277,15 @@ button:focus-visible {
     linear-gradient(to right, rgb(0 0 0 / 0.019) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(0 0 0 / 0.019) 1px, transparent 1px);
   background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+
+@media (max-height: 640px) {
+  .hero-stage-centered.hero-stage-short-safe {
+    align-items: flex-start;
+    padding-top: 6rem;
+    padding-bottom: 3rem;
+    overflow: visible;
+  }
 }
 
 .action-grid-warp {

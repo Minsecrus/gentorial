@@ -4,9 +4,7 @@ import {
   compileGenerationPrompt,
   createBrowserByokGenerator,
   createMockGenerator,
-  GenerationValidationError,
-  type GenerationInput,
-  validateGeneratedLesson
+  type GenerationInput
 } from './index.js'
 
 const course = defineCourse({
@@ -102,7 +100,7 @@ describe('compileGenerationPrompt', () => {
 })
 
 describe('createMockGenerator', () => {
-  it('returns deterministic, validated lesson blocks', async () => {
+  it('returns deterministic lesson blocks', async () => {
     const lesson = await createMockGenerator().generate(input)
 
     expect(lesson.grounding.conceptIds).toEqual(['switch-discrete'])
@@ -112,14 +110,6 @@ describe('createMockGenerator', () => {
       text: expect.stringContaining('对照来看，')
     })
     expect(JSON.stringify(lesson)).not.toMatch(/确定性|Mock|叙事=|详略=|依据：/u)
-  })
-
-  it('rejects deliberately invalid mock output', async () => {
-    const generator = createMockGenerator({
-      transform: () => ({ schemaVersion: '1', blocks: [{ type: 'html' }] })
-    })
-
-    await expect(generator.generate(input)).rejects.toBeInstanceOf(GenerationValidationError)
   })
 
   it('supports section-only generation without concepts', async () => {
@@ -168,28 +158,38 @@ describe('createBrowserByokGenerator', () => {
     {
       provider: 'openai' as const,
       response: { choices: [{ message: { content: JSON.stringify(lessonResponse) } }] },
-      url: 'https://api.openai.com/v1/chat/completions',
+      baseUrl: 'https://proxy.example/openai/v1',
+      url: 'https://proxy.example/openai/v1/chat/completions',
       header: 'authorization'
     },
     {
       provider: 'anthropic' as const,
       response: { content: [{ type: 'text', text: JSON.stringify(lessonResponse) }] },
-      url: 'https://api.anthropic.com/v1/messages',
+      baseUrl: 'https://proxy.example/anthropic/v1',
+      url: 'https://proxy.example/anthropic/v1/messages',
       header: 'x-api-key'
     },
     {
       provider: 'google' as const,
       response: { candidates: [{ content: { parts: [{ text: JSON.stringify(lessonResponse) }] } }] },
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/test-model:generateContent',
+      baseUrl: 'https://proxy.example/google/v1beta',
+      url: 'https://proxy.example/google/v1beta/models/test-model:generateContent',
       header: 'x-goog-api-key'
+    },
+    {
+      provider: 'custom' as const,
+      response: { choices: [{ message: { content: JSON.stringify(lessonResponse) } }] },
+      baseUrl: 'https://local.example/v1',
+      url: 'https://local.example/v1/chat/completions',
+      header: 'authorization'
     }
-  ])('sends and validates $provider structured output', async ({ provider, response, url, header }) => {
+  ])('sends $provider structured output', async ({ provider, response, baseUrl, url, header }) => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify(response), {
       status: 200,
       headers: { 'content-type': 'application/json' }
     }))
     const generator = createBrowserByokGenerator(
-      { provider, apiKey: 'test-secret', model: 'test-model' },
+      { provider, apiKey: 'test-secret', model: 'test-model', baseUrl },
       { fetch: fetchMock as typeof fetch }
     )
 
@@ -202,49 +202,35 @@ describe('createBrowserByokGenerator', () => {
     expect((init as RequestInit).headers).toMatchObject({ [header]: expect.stringContaining('test-secret') })
     expect((init as RequestInit).body).not.toContain('test-secret')
   })
-})
 
-describe('validateGeneratedLesson', () => {
-  const lesson = {
-    schemaVersion: '1' as const,
-    blocks: [{ type: 'paragraph' as const, text: '受约束的讲解。' }],
-    grounding: {
-      conceptIds: ['switch-discrete'],
-      sourceIds: ['section-switch']
-    }
-  }
-
-  it('requires grounding for the current section scope', () => {
-    const result = validateGeneratedLesson(
-      { ...lesson, grounding: { ...lesson.grounding, sourceIds: [] } },
-      input
-    )
-
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.diagnostics).toContainEqual(
-        expect.objectContaining({ code: 'AI_MISSING_SOURCE_GROUNDING' })
-      )
-    }
-  })
-
-  it('rejects grounding for unknown section sources', () => {
-    const result = validateGeneratedLesson(
+  it('streams OpenAI-compatible text chunks without waiting for a complete lesson', async () => {
+    const sse = [
+      'data: {"choices":[{"delta":{"content":"第一段"}}]}',
+      '',
+      'data: {"choices":[{"delta":{"content":"，第二段"}}]}',
+      '',
+      'data: [DONE]',
+      ''
+    ].join('\n')
+    const fetchMock = vi.fn(async () => new Response(sse, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' }
+    }))
+    const generator = createBrowserByokGenerator(
       {
-        ...lesson,
-        grounding: {
-          ...lesson.grounding,
-          sourceIds: ['section-switch', 'unknown-section']
-        }
+        provider: 'custom',
+        apiKey: 'test-secret',
+        model: 'test-model',
+        baseUrl: 'https://local.example/v1'
       },
-      input
+      { fetch: fetchMock as typeof fetch }
     )
 
-    expect(result.success).toBe(false)
-    if (!result.success) {
-      expect(result.diagnostics).toContainEqual(
-        expect.objectContaining({ code: 'AI_UNKNOWN_SOURCE_GROUNDING' })
-      )
-    }
+    const chunks: string[] = []
+    for await (const chunk of generator.stream!(input)) chunks.push(chunk)
+
+    expect(chunks).toEqual(['第一段', '，第二段'])
+    const [, init] = fetchMock.mock.calls[0]!
+    expect(JSON.parse((init as RequestInit).body as string)).toMatchObject({ stream: true })
   })
 })

@@ -17,11 +17,11 @@ app.use(createGentorialRuntime({
 }))
 ```
 
-新的页面集成由两个组件组成：把 `GentorialGenerateTrigger` 放在标题中，把 `GentorialGeneratedRegion` 放在作者原文之后。两者只通过稳定的生成 ID 关联；重新生成会替换旧结果，取消或过期请求不会覆盖新结果。`GentorialPreferences` 使用与门户一致的两步流程：先选择内容偏好，再选择可跳过的 BYOK；密钥只保存在当前页面的内存中。
+新的页面集成由两个组件组成：把 `GentorialGenerateTrigger` 放在标题中，把 `GentorialGeneratedRegion` 放在作者原文之后。两者只通过稳定的生成 ID 关联；重新生成会替换旧结果，取消或过期请求不会覆盖新结果。`GentorialPreferences` 使用与门户一致的两步流程：先选择内容偏好，再选择可跳过的 BYOK；BYOK 可配置提供方、密钥、模型和 Base URL，且密钥只保存在当前页面的内存中。
 
 默认结果区只顺序渲染 `GeneratedLesson` blocks，不显示来源标签、角色、问题、等待提示或错误说明。讲解出现后，末尾常驻一个带“继续追问…” placeholder 的单行输入和“发送”按钮，不依赖点击教程正文来唤起。Enter 或按钮提交，Escape 取消活动追问并清空草稿；成功回答通过 `LessonBlockRenderer` 插入输入框上方，用户问题不进入可见结果。初次请求尚未完成或失败时，默认组件返回 `null`；`fallback` 与错误状态仍保留在运行时，供自定义界面按需使用。
 
-运行时把首轮完整 `GeneratedLesson`、已有问答和当前问题作为 `conversation` 再次交给同一个 `generate` 函数，因此后续回答仍沿用原来的 section scope、概念锚点和学习者偏好。每个 assistant turn 仍是受控的 `GeneratedLesson`；具体 grounding 与校验继续由 generator 负责。
+运行时把首轮完整 `GeneratedLesson`、已有问答和当前问题作为 `conversation` 再次交给同一个 `generate` 函数，因此后续回答仍沿用原来的 section scope、概念锚点和学习者偏好。`generate` 既可返回完整 `GeneratedLesson`，也可返回 `AsyncIterable<string>`；后者会在首轮和追问中增量显示，并在结束后固化为受控 paragraph block。运行时不判断生成内容是否正确，也不暴露校验钩子。
 
 也可以用运行时 API 驱动自定义界面：
 

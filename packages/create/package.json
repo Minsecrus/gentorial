@@ -1,6 +1,6 @@
 {
   "name": "@gentorial/create",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Project scaffolder for Gentorial courses.",
   "type": "module",
   "sideEffects": false,

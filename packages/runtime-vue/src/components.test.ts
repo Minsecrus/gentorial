@@ -143,6 +143,38 @@ describe('GentorialPreferences', () => {
       narrative: 'timeline'
     })
   })
+
+  it('stores the selected BYOK model and Base URL in the runtime session', () => {
+    const runtime = createGentorialRuntime({ generate: vi.fn() })
+    const render = setupRender(GentorialPreferences, {}, runtime)
+    const continueButton = findVNode(render(), (candidate) => candidate.children === '继续 →')!
+
+    invoke(continueButton, 'onClick')
+    let byok = render()
+    let fields = vnodeChildren(vnodeChildren(byok)[1]!)
+    const provider = vnodeChildren(fields[0]!)[1]!
+    invoke(provider, 'onChange', { currentTarget: { value: 'custom' } })
+
+    byok = render()
+    fields = vnodeChildren(vnodeChildren(byok)[1]!)
+    const apiKey = vnodeChildren(fields[1]!)[1]!
+    const model = vnodeChildren(fields[2]!)[1]!
+    const baseUrl = vnodeChildren(fields[3]!)[1]!
+    invoke(apiKey, 'onInput', { currentTarget: { value: 'secret' } })
+    invoke(model, 'onInput', { currentTarget: { value: 'local-model' } })
+    invoke(baseUrl, 'onInput', { currentTarget: { value: 'https://localhost:11434/v1' } })
+
+    const save = findVNode(render(), (candidate) => candidate.children === '保存并继续')!
+    expect(save.props?.disabled).toBe(false)
+    invoke(save, 'onClick')
+
+    expect(runtime.byokSession.value).toEqual({
+      provider: 'custom',
+      apiKey: 'secret',
+      model: 'local-model',
+      baseUrl: 'https://localhost:11434/v1'
+    })
+  })
 })
 
 describe('GentorialGenerateTrigger', () => {

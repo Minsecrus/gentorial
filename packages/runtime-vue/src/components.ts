@@ -369,6 +369,9 @@ export const GentorialGeneratedRegion = defineComponent({
           ? [h(LessonBlockRenderer, { key: `assistant-${index}`, blocks: turn.lesson.blocks })]
           : []
       )
+      const streamingFollowUp = current.streamingFollowUpBlocks.length > 0
+        ? [h(LessonBlockRenderer, { key: 'assistant-stream', blocks: current.streamingFollowUpBlocks })]
+        : []
       const hiddenStyle = {
         position: 'absolute',
         width: '1px',
@@ -398,6 +401,7 @@ export const GentorialGeneratedRegion = defineComponent({
         [
           h(LessonBlockRenderer, { key: 'base', blocks: current.blocks }),
           ...assistantLessons,
+          ...streamingFollowUp,
           ...(current.followUpError
             ? [
                 h(
@@ -494,16 +498,16 @@ export const GentorialPreferences = defineComponent({
     const open = ref(props.presentation === 'inline')
     const provider = ref('openai')
     const apiKey = ref('')
-    const model = ref('gpt-5-mini')
-    const endpoint = ref('')
+    const model = ref('gpt-5.6-terra')
+    const baseUrl = ref('https://api.openai.com/v1')
     let dialogElement: HTMLElement | undefined
     let triggerElement: HTMLButtonElement | undefined
 
-    const providerDefaults: Record<string, string> = {
-      openai: 'gpt-5-mini',
-      anthropic: 'claude-sonnet-4-5',
-      google: 'gemini-3.5-flash',
-      custom: ''
+    const providerDefaults: Record<string, { model: string; baseUrl: string }> = {
+      openai: { model: 'gpt-5.6-terra', baseUrl: 'https://api.openai.com/v1' },
+      anthropic: { model: 'claude-sonnet-5', baseUrl: 'https://api.anthropic.com/v1' },
+      google: { model: 'gemini-3.5-flash', baseUrl: 'https://generativelanguage.googleapis.com/v1beta' },
+      custom: { model: '', baseUrl: '' }
     }
 
     function handleDialogKeydown(event: KeyboardEvent): void {
@@ -594,7 +598,7 @@ export const GentorialPreferences = defineComponent({
               provider: provider.value,
               apiKey: apiKey.value.trim(),
               ...(model.value.trim() ? { model: model.value.trim() } : {}),
-              ...(endpoint.value.trim() ? { endpoint: endpoint.value.trim() } : {})
+              ...(baseUrl.value.trim() ? { baseUrl: baseUrl.value.trim() } : {})
             }
       )
       completed.value = true
@@ -654,8 +658,9 @@ export const GentorialPreferences = defineComponent({
                 value: provider.value,
                 onChange: (event: Event) => {
                   provider.value = (event.currentTarget as HTMLSelectElement).value
-                  model.value = providerDefaults[provider.value] ?? ''
-                  endpoint.value = ''
+                  const defaults = providerDefaults[provider.value] ?? providerDefaults.custom!
+                  model.value = defaults.model
+                  baseUrl.value = defaults.baseUrl
                 }
               },
               [
@@ -685,26 +690,26 @@ export const GentorialPreferences = defineComponent({
               type: 'text',
               value: model.value,
               spellcheck: false,
-              placeholder: provider.value === 'custom' ? '必填，例如 llama3.2' : providerDefaults[provider.value],
+              placeholder: provider.value === 'custom'
+                ? '必填，例如 llama3.2'
+                : providerDefaults[provider.value]?.model,
               onInput: (event: Event) => {
                 model.value = (event.currentTarget as HTMLInputElement).value
               }
             })
           ]),
-          ...(provider.value === 'custom'
-            ? [h('label', { class: 'gentorial-preferences__field gentorial-preferences__field--wide' }, [
-                h('span', 'API endpoint'),
-                h('input', {
-                  type: 'url',
-                  value: endpoint.value,
-                  spellcheck: false,
-                  placeholder: 'https://example.com/v1',
-                  onInput: (event: Event) => {
-                    endpoint.value = (event.currentTarget as HTMLInputElement).value
-                  }
-                })
-              ])]
-            : [])
+          h('label', { class: 'gentorial-preferences__field gentorial-preferences__field--wide' }, [
+            h('span', 'Base URL'),
+            h('input', {
+              type: 'url',
+              value: baseUrl.value,
+              spellcheck: false,
+              placeholder: providerDefaults[provider.value]?.baseUrl || 'https://example.com/v1',
+              onInput: (event: Event) => {
+                baseUrl.value = (event.currentTarget as HTMLInputElement).value
+              }
+            })
+          ])
         ]),
         h(
           'p',
@@ -726,7 +731,7 @@ export const GentorialPreferences = defineComponent({
             {
               class: 'gentorial-preferences__primary',
               type: 'button',
-              disabled: !apiKey.value.trim() || (provider.value === 'custom' && (!model.value.trim() || !endpoint.value.trim())),
+              disabled: !apiKey.value.trim() || (provider.value === 'custom' && (!model.value.trim() || !baseUrl.value.trim())),
               onClick: () => finish(false)
             },
             '保存并继续'
