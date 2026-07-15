@@ -1,13 +1,13 @@
+import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('vitepress/theme', () => ({ default: {} }))
 
 import { createGentorialTheme } from './index.js'
 
 describe('createGentorialTheme', () => {
   it('registers the controlled Gentorial components', () => {
     const component = vi.fn()
-    const theme = createGentorialTheme()
+    const baseTheme = { Layout: defineComponent({ render: () => null }) }
+    const theme = createGentorialTheme({ extends: baseTheme })
 
     theme.enhanceApp?.({ app: { component } } as never)
 

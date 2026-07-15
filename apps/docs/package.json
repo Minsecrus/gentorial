@@ -1,0 +1,35 @@
+{
+  "name": "@gentorial/docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others --names web,server \"vitepress dev docs\" \"tsx watch --env-file=.env server/index.ts\"",
+    "build": "vitepress build docs",
+    "preview": "vitepress preview docs",
+    "typecheck": "tsc --noEmit",
+    "dev:web": "vitepress dev docs",
+    "dev:server": "tsx watch --env-file=.env server/index.ts",
+    "server": "tsx --env-file=.env server/index.ts"
+  },
+  "dependencies": {
+    "@gentorial/ai": "workspace:^",
+    "@gentorial/core": "workspace:^",
+    "@gentorial/engine-vitepress": "workspace:^",
+    "@gentorial/runtime-vue": "workspace:^",
+    "@gentorial/theme-default": "workspace:^",
+    "vitepress": "^1.6.4",
+    "vue": "^3.5.39",
+    "@gentorial/server": "workspace:^",
+    "@hono/node-server": "^2.0.9",
+    "hono": "^4.12.30",
+    "tsx": "^4.23.1"
+  },
+  "devDependencies": {
+    "markdown-it-mathjax3": "^4.3.2",
+    "mermaid": "^11.16.0",
+    "typescript": "^7.0.2",
+    "@types/node": "^26.1.1",
+    "concurrently": "^10.0.3"
+  }
+}

@@ -1,11 +1,15 @@
 # `@gentorial/ai`
 
-Gentorial 的提供方无关 AI 管线。该包负责编译提示、分离提供方适配与传输，并提供确定性 mock。
+Gentorial 的提供方无关 AI 管线。该包负责编译提示、分离提供方适配与传输，并提供浏览器 BYOK 与服务端生成适配器。
 
 ```ts
-import { createMockGenerator } from '@gentorial/ai'
+import { createBrowserByokGenerator } from '@gentorial/ai'
 
-const generator = createMockGenerator()
+const generator = createBrowserByokGenerator({
+  provider: 'openai',
+  apiKey: sessionKey,
+  model: 'gpt-5.1'
+})
 const lesson = await generator.generate(input)
 ```
 

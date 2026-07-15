@@ -46,6 +46,7 @@ describe('create-gentorial CLI', () => {
       '--lang', 'zh-CN',
       '--package-manager', 'npm',
       '--allow-unsafe-html',
+      '--server',
       '--no-install',
       '--no-git'
     ])
@@ -59,5 +60,8 @@ describe('create-gentorial CLI', () => {
     expect(readme).toContain('npm install')
     expect(readme).toContain('npm run dev')
     expect(courseSource).toContain('allowUnsafeHtml: true')
+    expect(packageSource).toHaveProperty('dependencies.@gentorial/server')
+    expect(await readFile(resolve(target, 'gentorial.server.config.ts'), 'utf8'))
+      .toContain("apiKeyEnv: 'OPENAI_API_KEY'")
   })
 })

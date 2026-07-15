@@ -12,6 +12,8 @@
     "dev": "pnpm --filter @gentorial/example-minimal dev",
     "dev:website": "pnpm --filter @gentorial/website dev",
     "build:website": "pnpm --filter @gentorial/website build",
+    "dev:docs": "pnpm --filter @gentorial/docs dev",
+    "build:docs": "pnpm --filter @gentorial/docs build",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "vitest run",
     "test:watch": "vitest",

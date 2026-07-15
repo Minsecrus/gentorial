@@ -9,19 +9,19 @@ import {
 } from '@gentorial/runtime-vue'
 import type { Theme } from 'vitepress'
 import { defineComponent, h } from 'vue'
-import DefaultTheme from 'vitepress/theme'
 import { createGentorialCodeBlock, type GentorialCodeBlockOptions } from './code-block.js'
 import { GentorialMermaid } from './mermaid.js'
 
 export type GentorialThemeOptions = {
-  extends?: Theme
+  extends: Theme
   enhanceApp?: NonNullable<Theme['enhanceApp']>
   codeBlock?: GentorialCodeBlockOptions
 }
 
-export function createGentorialTheme(options: GentorialThemeOptions = {}): Theme {
-  const baseTheme = options.extends ?? DefaultTheme
-  const BaseLayout = baseTheme.Layout ?? DefaultTheme.Layout
+export function createGentorialTheme(options: GentorialThemeOptions): Theme {
+  const baseTheme = options.extends
+  const BaseLayout = baseTheme.Layout
+  if (!BaseLayout) throw new Error('Gentorial base theme must provide a Layout component')
   const Layout = defineComponent({
     name: 'GentorialLayout',
     setup() {

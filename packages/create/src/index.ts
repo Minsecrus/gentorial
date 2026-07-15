@@ -9,6 +9,7 @@ export type CreateGentorialProjectOptions = {
   lang?: string
   packageManager?: ProjectPackageManager
   allowUnsafeHtml?: boolean
+  server?: boolean
 }
 
 export type ProjectPackageManager = 'pnpm' | 'npm' | 'yarn' | 'bun'
@@ -20,6 +21,10 @@ export type CreatedGentorialProject = {
 
 function templateDirectory(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), '../template')
+}
+
+function serverTemplateDirectory(): string {
+  return resolve(dirname(fileURLToPath(import.meta.url)), '../template-server')
 }
 
 export function validateProjectName(name: string): string | undefined {
@@ -81,7 +86,13 @@ async function copyTemplateDirectory(
 
   for (const entry of entries) {
     const sourcePath = resolve(sourceDir, entry.name)
-    const outputName = entry.name === '_gitignore' ? '.gitignore' : entry.name
+    const outputName = entry.name === '_gitignore'
+      ? '.gitignore'
+      : entry.name === '_env'
+        ? '.env'
+        : entry.name === '_env.example'
+          ? '.env.example'
+          : entry.name
     const targetPath = resolve(targetDir, outputName)
     if (entry.isDirectory()) {
       await copyTemplateDirectory(sourcePath, targetPath, values)
@@ -114,6 +125,43 @@ export async function createGentorialProject(
     devCommand: packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`,
     allowUnsafeHtml: String(options.allowUnsafeHtml === true)
   })
+  if (options.server) {
+    await copyTemplateDirectory(serverTemplateDirectory(), targetDir, {
+      projectName,
+      title: options.title ?? projectName,
+      lang: options.lang ?? 'zh-CN',
+      installCommand: packageManager === 'yarn' ? 'yarn' : `${packageManager} install`,
+      devCommand: packageManager === 'npm' ? 'npm run dev' : `${packageManager} dev`,
+      allowUnsafeHtml: String(options.allowUnsafeHtml === true)
+    })
+
+    const packagePath = resolve(targetDir, 'package.json')
+    const packageJson = JSON.parse(await readFile(packagePath, 'utf8')) as {
+      scripts: Record<string, string>
+      dependencies: Record<string, string>
+      devDependencies: Record<string, string>
+    }
+    packageJson.scripts = {
+      ...packageJson.scripts,
+      dev: 'concurrently --kill-others --names web,server "vitepress dev docs" "tsx watch --env-file=.env server/index.ts"',
+      'dev:web': 'vitepress dev docs',
+      'dev:server': 'tsx watch --env-file=.env server/index.ts',
+      server: 'tsx --env-file=.env server/index.ts'
+    }
+    packageJson.dependencies = {
+      ...packageJson.dependencies,
+      '@gentorial/server': '^0.1.0',
+      '@hono/node-server': '^2.0.9',
+      hono: '^4.12.30',
+      tsx: '^4.23.1'
+    }
+    packageJson.devDependencies = {
+      ...packageJson.devDependencies,
+      '@types/node': '^26.1.1',
+      concurrently: '^10.0.3'
+    }
+    await writeFile(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8')
+  }
   await mkdir(resolve(targetDir, 'public'), { recursive: true })
 
   return { targetDir, projectName }

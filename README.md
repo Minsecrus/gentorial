@@ -9,6 +9,8 @@
 
 [中文文档](./README.zh-CN.md)
 
+[Technical documentation](https://minsecrus.github.io/gentorial/docs/)
+
 Gentorial is a VitePress-first framework for tutorials that combine durable, author-written knowledge with explanations generated for each learner. Authors define the facts, scope, and accuracy policies that must remain stable. Learners choose the depth, tone, narrative style, and examples that help them understand those facts.
 
 The original tutorial always remains readable. AI is an optional layer attached to explicit points in the document, not a replacement for the source material.
@@ -20,7 +22,7 @@ Conventional documentation gives every learner the same explanation. General-pur
 - **Authors define the curriculum.** Concept anchors, source sections, generation prompts, and accuracy policies live in version-controlled files.
 - **Learners shape the presentation.** Global preferences affect detail, tone, narrative, and examples without rewriting the underlying claims.
 - **Generated content stays in the document.** Explanations appear after the relevant source section and can be regenerated, copied, collapsed, or followed up in place.
-- **AI remains optional.** A deterministic mock works without credentials; learners may explicitly enable BYOK for supported providers.
+- **AI remains optional.** Author-written content remains readable without generation; generated sections use a real managed server or learner-enabled BYOK and fail visibly when neither is configured.
 
 ## Features
 
@@ -67,7 +69,7 @@ cd my-course
 pnpm dev
 ```
 
-The starter opens without an API key. It uses the deterministic generator until the learner explicitly configures BYOK.
+The author-written tutorial opens without an API key. The scaffolder can generate a managed server with a shared cache; browser-only projects require learner BYOK and never fabricate fallback content.
 
 ## Generated project
 
@@ -132,33 +134,41 @@ export default defineConfig({
 })
 ```
 
-The default theme installs the Vue runtime and chooses between the deterministic generator and learner-enabled BYOK:
+The default theme installs the Vue runtime. In browser-only mode it requires learner-enabled BYOK and reports missing configuration as an error:
 
 ```ts
 // docs/.vitepress/theme/index.ts
-import { createMockGenerator } from '@gentorial/ai'
+import { createBrowserByokGenerator, type BrowserByokProvider } from '@gentorial/ai'
 import { createGentorialRuntime } from '@gentorial/runtime-vue'
 import { createGentorialTheme } from '@gentorial/theme-default'
 import '@gentorial/theme-default/style.css'
+import DefaultTheme from 'vitepress/theme'
 import course from '../../../course.config.js'
 
-const generator = createMockGenerator()
 const runtime = createGentorialRuntime({
   learnerProfile: {
     detail: 'balanced',
     tone: 'conversational',
     narrative: 'direct'
   },
-  generate: (request, context) => generator.generate({
-    course,
-    generate: request.generate,
-    concepts: request.concepts,
-    ...(request.learner ? { learner: request.learner } : {}),
-    ...(request.conversation ? { conversation: request.conversation } : {})
-  }, { signal: context.signal })
+  generate(request, context) {
+    if (!context.byok) throw new Error('Configure BYOK before generating')
+    const generator = createBrowserByokGenerator({
+      ...context.byok,
+      provider: context.byok.provider as BrowserByokProvider
+    })
+    const input = {
+      course,
+      generate: request.generate,
+      concepts: request.concepts
+    }
+    return generator.stream?.(input, { signal: context.signal })
+      ?? generator.generate(input, { signal: context.signal })
+  }
 })
 
 export default createGentorialTheme({
+  extends: DefaultTheme,
   enhanceApp({ app }) {
     app.use(runtime)
   }
@@ -189,7 +199,7 @@ Server-managed generation can use `createProviderGenerator` with a framework-neu
 | --- | --- |
 | [`@gentorial/core`](./packages/core) | Course schemas, stable protocol types, and validation |
 | [`@gentorial/content`](./packages/content) | Markdown parsing and course-manifest compilation |
-| [`@gentorial/ai`](./packages/ai) | Prompt compilation, structured and streaming generation, mock, and BYOK adapters |
+| [`@gentorial/ai`](./packages/ai) | Prompt compilation, structured and streaming generation, BYOK, and server adapters |
 | [`@gentorial/server`](./packages/server) | Server-managed credentials, generation endpoints, and shared result caching |
 | [`@gentorial/runtime-vue`](./packages/runtime-vue) | Vue runtime state, generation lifecycle, preferences, and rendering |
 | [`@gentorial/engine-vitepress`](./packages/engine-vitepress) | VitePress Markdown integration and directive transformation |

@@ -38,6 +38,9 @@ describe('createGentorialProject', () => {
     expect(JSON.parse(packageSource)).toMatchObject({
       name: 'my-course',
       private: true,
+      scripts: {
+        typecheck: 'tsc --noEmit'
+      },
       devDependencies: {
         'markdown-it-mathjax3': expect.any(String),
         mermaid: expect.any(String)
@@ -45,13 +48,71 @@ describe('createGentorialProject', () => {
     })
     expect(courseSource).toContain("title: '我的课程'")
     expect(courseSource).toContain('allowUnsafeHtml: true')
-    expect(themeSource).toContain('createMockGenerator')
+    expect(themeSource).not.toContain('createMockGenerator')
+    expect(themeSource).toContain('尚未配置生成服务')
     expect(themeSource).toContain('createGentorialRuntime')
     expect(themeSource).toContain('request.conversation')
     expect(themeSource).toContain('allowUnsafeHtml: course.rendering?.allowUnsafeHtml')
     expect(vitepressSource).toContain("import { defineConfig } from 'vitepress'")
     expect(vitepressSource).toContain('math: true')
     expect(vitepressSource).toContain('config: gentorialMarkdown')
+  })
+
+  it('creates a runnable managed server variant with centralized configuration', async () => {
+    const cwd = await mkdtemp(resolve(tmpdir(), 'gentorial-create-server-'))
+    temporaryDirectories.push(cwd)
+
+    const result = await createGentorialProject({
+      cwd,
+      targetDir: 'managed-course',
+      title: '服务端课程',
+      server: true
+    })
+    const packageJson = JSON.parse(
+      await readFile(resolve(result.targetDir, 'package.json'), 'utf8')
+    ) as {
+      scripts: Record<string, string>
+      dependencies: Record<string, string>
+      devDependencies: Record<string, string>
+    }
+    const serverConfig = await readFile(
+      resolve(result.targetDir, 'gentorial.server.config.ts'),
+      'utf8'
+    )
+    const serverSource = await readFile(resolve(result.targetDir, 'server/index.ts'), 'utf8')
+    const themeSource = await readFile(
+      resolve(result.targetDir, 'docs/.vitepress/theme/index.ts'),
+      'utf8'
+    )
+    const vitepressSource = await readFile(
+      resolve(result.targetDir, 'docs/.vitepress/config.ts'),
+      'utf8'
+    )
+    const environment = await readFile(resolve(result.targetDir, '.env'), 'utf8')
+    const pnpmWorkspace = await readFile(
+      resolve(result.targetDir, 'pnpm-workspace.yaml'),
+      'utf8'
+    )
+
+    expect(packageJson.scripts.dev).toContain('concurrently')
+    expect(packageJson.scripts['dev:server']).toContain('server/index.ts')
+    expect(packageJson.dependencies).toMatchObject({
+      '@gentorial/server': '^0.1.0',
+      '@hono/node-server': expect.any(String),
+      hono: expect.any(String)
+    })
+    expect(packageJson.devDependencies.concurrently).toBeTruthy()
+    expect(packageJson.devDependencies['@types/node']).toBeTruthy()
+    expect(serverConfig).toContain("provider: 'openai'")
+    expect(serverConfig).toContain("apiKeyEnv: 'OPENAI_API_KEY'")
+    expect(serverConfig).toContain('profileRevision:')
+    expect(serverSource).toContain('createGentorialServer')
+    expect(serverSource).toContain('createFileGenerationCache')
+    expect(themeSource).toContain('createGentorialServerGenerator')
+    expect(themeSource).not.toContain('createMockGenerator')
+    expect(vitepressSource).toContain("'/api/gentorial'")
+    expect(environment).toContain('OPENAI_API_KEY=')
+    expect(pnpmWorkspace).toContain('esbuild: true')
   })
 
   it('refuses to overwrite a non-empty directory', async () => {

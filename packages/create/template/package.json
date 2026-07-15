@@ -6,14 +6,15 @@
   "scripts": {
     "dev": "vitepress dev docs",
     "build": "vitepress build docs",
-    "preview": "vitepress preview docs"
+    "preview": "vitepress preview docs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@gentorial/ai": "^0.1.0",
-    "@gentorial/core": "^0.1.0",
+    "@gentorial/ai": "^0.2.0",
+    "@gentorial/core": "^0.1.1",
     "@gentorial/engine-vitepress": "^0.1.0",
-    "@gentorial/runtime-vue": "^0.1.0",
-    "@gentorial/theme-default": "^0.1.0",
+    "@gentorial/runtime-vue": "^0.2.0",
+    "@gentorial/theme-default": "^0.1.1",
     "vitepress": "^1.6.4",
     "vue": "^3.5.39"
   },

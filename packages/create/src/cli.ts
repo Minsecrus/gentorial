@@ -27,6 +27,7 @@ type CliOptions = {
   lang?: string
   packageManager?: PackageManager
   allowUnsafeHtml?: boolean
+  server?: boolean
   install?: boolean
   git?: boolean
   yes: boolean
@@ -45,6 +46,7 @@ function help(): string {
     '  --package-manager <name>        pnpm, npm, yarn, or bun',
     '  --allow-unsafe-html             Render raw HTML in AI-generated content',
     '  --no-unsafe-html                Keep raw HTML inert (default)',
+    '  --server / --no-server          Include a managed generation server',
     '  --install / --no-install        Install dependencies or skip installation',
     '  --git / --no-git                Initialize Git or skip it',
     '  -y, --yes                       Accept defaults without prompting',
@@ -69,6 +71,8 @@ function parseArguments(arguments_: string[]): CliOptions {
     else if (argument === '--no-install') options.install = false
     else if (argument === '--allow-unsafe-html') options.allowUnsafeHtml = true
     else if (argument === '--no-unsafe-html') options.allowUnsafeHtml = false
+    else if (argument === '--server') options.server = true
+    else if (argument === '--no-server') options.server = false
     else if (argument === '--git') options.git = true
     else if (argument === '--no-git') options.git = false
     else if (argument === '--title') options.title = optionValue(arguments_, index++, argument)
@@ -186,6 +190,15 @@ export async function run(arguments_: string[] = process.argv.slice(2)): Promise
       }))
     : false)
 
+  const includeServer = options.server ?? (interactive
+    ? answer(await confirm({
+        message: lang === 'zh-CN'
+          ? '是否创建带统一模型、服务端 Key 和共享缓存的生成服务？'
+          : 'Include managed generation with a server-side key and shared cache?',
+        initialValue: true
+      }))
+    : options.yes)
+
   const detectedPackageManager = options.packageManager ?? detectPackageManager()
   const packageManager = detectedPackageManager ?? (interactive
     ? answer(await select<PackageManager>({
@@ -212,7 +225,8 @@ export async function run(arguments_: string[] = process.argv.slice(2)): Promise
     title,
     lang,
     packageManager,
-    allowUnsafeHtml
+    allowUnsafeHtml,
+    server: includeServer
   })
 
   if (shouldInstall) {
@@ -242,6 +256,13 @@ export async function run(arguments_: string[] = process.argv.slice(2)): Promise
     ...(!shouldInstall ? [`${packageManagerInstallCommand(packageManager)[0]}${packageManager === 'yarn' ? '' : ' install'}`] : []),
     packageManagerDevCommand(packageManager)
   ]
+
+  if (includeServer) {
+    nextSteps.splice(nextSteps.length - 1, 0,
+      'Edit .env: set OPENAI_API_KEY',
+      'Edit gentorial.server.config.ts: provider, model, apiKeyEnv, profileRevision, cache'
+    )
+  }
 
   if (interactive) {
     outro(`Created ${result.projectName}\n\n${nextSteps.map((step) => `  ${step}`).join('\n')}`)

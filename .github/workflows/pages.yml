@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "apps/website/**"
+      - "apps/docs/**"
+      - "packages/**"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
@@ -44,6 +46,17 @@ jobs:
 
       - name: Build website
         run: pnpm --filter @gentorial/website exec vite build --base=/gentorial/
+
+      - name: Build documentation
+        env:
+          GENTORIAL_DOCS_BASE: /gentorial/docs/
+          GENTORIAL_WEBSITE_URL: /gentorial/
+        run: pnpm --filter @gentorial/docs build
+
+      - name: Add documentation to website artifact
+        run: |
+          mkdir -p apps/website/dist/docs
+          cp -R apps/docs/docs/.vitepress/dist/. apps/website/dist/docs/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v4

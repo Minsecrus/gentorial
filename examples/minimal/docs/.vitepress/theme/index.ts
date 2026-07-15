@@ -1,14 +1,13 @@
 import {
   createBrowserByokGenerator,
-  createMockGenerator,
   type BrowserByokProvider
 } from '@gentorial/ai'
 import { createGentorialRuntime } from '@gentorial/runtime-vue'
 import { createGentorialTheme } from '@gentorial/theme-default'
 import '@gentorial/theme-default/style.css'
+import DefaultTheme from 'vitepress/theme'
 import course from '../../../course.config.js'
 
-const generator = createMockGenerator()
 const runtime = createGentorialRuntime({
   allowUnsafeHtml: course.rendering?.allowUnsafeHtml,
   learnerProfile: {
@@ -24,18 +23,20 @@ const runtime = createGentorialRuntime({
       ...(request.learner ? { learner: request.learner } : {}),
       ...(request.conversation ? { conversation: request.conversation } : {})
     }
-    const activeGenerator = context.byok
-      ? createBrowserByokGenerator({
-          ...context.byok,
-          provider: context.byok.provider as BrowserByokProvider
-        })
-      : generator
+    if (!context.byok) {
+      throw new Error('尚未配置生成服务。请先在 Preferences 中配置 BYOK。')
+    }
+    const activeGenerator = createBrowserByokGenerator({
+      ...context.byok,
+      provider: context.byok.provider as BrowserByokProvider
+    })
     return activeGenerator.stream?.(input, { signal: context.signal })
       ?? activeGenerator.generate(input, { signal: context.signal })
   }
 })
 
 export default createGentorialTheme({
+  extends: DefaultTheme,
   enhanceApp({ app }) {
     app.use(runtime)
   }

@@ -5,8 +5,9 @@ Gentorial 的默认 VitePress 主题集成。它在 VitePress 中注册运行时
 ```ts
 import { createGentorialTheme } from '@gentorial/theme-default'
 import '@gentorial/theme-default/style.css'
+import DefaultTheme from 'vitepress/theme'
 
-export default createGentorialTheme()
+export default createGentorialTheme({ extends: DefaultTheme })
 ```
 
 标题图标没有背景色和边框，默认低存在感，在标题悬停或键盘聚焦时增强；触屏设备会保留可发现的点击面积。样式同时处理 `prefers-reduced-motion` 和强制高对比模式。

@@ -1,5 +1,3 @@
-export { createMockGenerator } from './mock.js'
-export type { MockGeneratorOptions } from './mock.js'
 export { createBrowserByokGenerator, createProviderGenerator } from './byok.js'
 export type {
   BrowserByokCredentials,

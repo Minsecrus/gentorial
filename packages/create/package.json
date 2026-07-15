@@ -6,7 +6,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "template"
+    "template",
+    "template-server"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

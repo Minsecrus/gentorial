@@ -20,7 +20,7 @@ type RevealStage =
   | 'ready'
 
 const repositoryUrl = 'https://github.com/Minsecrus/gentorial'
-const docsUrl = `${repositoryUrl}/blob/main/README.zh-CN.md`
+const docsUrl = `${import.meta.env.BASE_URL}docs/`
 const readUrl = '#/read'
 const desktopLeftTarget = 'erate Y'
 const desktopRightTarget = 'our Tut'

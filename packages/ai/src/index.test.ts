@@ -3,7 +3,6 @@ import { defineCourse, type ConceptSpec, type GenerateSpec } from '@gentorial/co
 import {
   compileGenerationPrompt,
   createBrowserByokGenerator,
-  createMockGenerator,
   createProviderGenerator,
   type GenerationInput
 } from './index.js'
@@ -97,54 +96,6 @@ describe('compileGenerationPrompt', () => {
     expect(prompt.system).toContain('后续问答必须继承当前 scope、概念锚点和课程准确性策略')
     expect(prompt.system).toContain('grounding.sourceIds 与 grounding.conceptIds 的规则保持不变')
     expect(prompt.system).toContain('不得依赖界面重复显示用户问题')
-  })
-})
-
-describe('createMockGenerator', () => {
-  it('returns deterministic lesson blocks', async () => {
-    const lesson = await createMockGenerator().generate(input)
-
-    expect(lesson.grounding.conceptIds).toEqual(['switch-discrete'])
-    expect(lesson.grounding.sourceIds).toEqual(['section-switch'])
-    expect(lesson.blocks[0]).toMatchObject({
-      type: 'paragraph',
-      text: expect.stringContaining('对照来看，')
-    })
-    expect(JSON.stringify(lesson)).not.toMatch(/确定性|Mock|叙事=|详略=|依据：/u)
-  })
-
-  it('supports section-only generation without concepts', async () => {
-    const sectionOnlyInput: GenerationInput = {
-      ...input,
-      concepts: [],
-      generate: { ...generate, concepts: [] },
-      learner: { detail: 'concise', narrative: 'timeline' }
-    }
-
-    const lesson = await createMockGenerator().generate(sectionOnlyInput)
-
-    expect(lesson.grounding.conceptIds).toEqual([])
-    expect(lesson.grounding.sourceIds).toEqual(['section-switch'])
-    expect(lesson.blocks[0]).toMatchObject({ text: expect.stringContaining('顺着发展顺序看，') })
-  })
-
-  it('returns a deterministic, source-grounded answer to the latest user question', async () => {
-    const lesson = await createMockGenerator().generate(followUpInput)
-
-    expect(lesson.blocks[0]).toMatchObject({
-      type: 'paragraph',
-      text: expect.stringContaining('那连续范围应该怎么写？')
-    })
-    expect(lesson.blocks[0]).toMatchObject({
-      text: expect.stringContaining('“switch 的适用边界”中的核心线索')
-    })
-    expect(lesson.blocks[0]).toMatchObject({ text: expect.stringContaining('对照来看，') })
-    expect(lesson.blocks[0]).toMatchObject({
-      text: expect.stringContaining('把这些线索逐项对照')
-    })
-    expect(JSON.stringify(lesson)).not.toMatch(/确定性|Mock|叙事=|详略=|依据：/u)
-    expect(lesson.grounding.conceptIds).toEqual(['switch-discrete'])
-    expect(lesson.grounding.sourceIds).toEqual(['section-switch'])
   })
 })
 
