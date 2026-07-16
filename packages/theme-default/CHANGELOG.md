@@ -1,5 +1,18 @@
 # @gentorial/theme-default
 
+## 0.2.0
+
+### Minor Changes
+
+- 2de2203: Store completed follow-ups as a selectable conversation tree and add a lightweight learning-path view made of connected points. Selecting an earlier point changes the active root-to-node context, and the next ordinary follow-up creates a child from that point. Point tooltips expose the corresponding question on hover and keyboard focus.
+- 3b571bf: Add an interactive, runnable managed-server scaffold with centralized provider and cache configuration, and remove the public mock generator and all generated-project mock fallbacks. Browser-only projects now surface a visible error until BYOK is configured. Require the host VitePress theme to be passed explicitly so independently installed theme packages build through VitePress's normal CSS pipeline.
+
+### Patch Changes
+
+- Updated dependencies [2de2203]
+- Updated dependencies [2de2203]
+  - @gentorial/runtime-vue@0.3.0
+
 ## 0.1.1
 
 ### Patch Changes

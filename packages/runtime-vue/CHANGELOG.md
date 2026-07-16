@@ -1,5 +1,12 @@
 # @gentorial/runtime-vue
 
+## 0.3.0
+
+### Minor Changes
+
+- 2de2203: Store completed follow-ups as a selectable conversation tree and add a lightweight learning-path view made of connected points. Selecting an earlier point changes the active root-to-node context, and the next ordinary follow-up creates a child from that point. Point tooltips expose the corresponding question on hover and keyboard focus.
+- 2de2203: Add independent context and generation resource limits. The runtime rejects over-budget active paths without trimming conversation history, managed handlers enforce request/input/follow-up/output limits before caching, streams stop on oversized output, and provider generators accept a portable maximum output token setting.
+
 ## 0.2.0
 
 ### Minor Changes
